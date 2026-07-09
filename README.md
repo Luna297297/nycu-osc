@@ -27,6 +27,6 @@ Self-study implementation of the NYCU Operating System Capstone (OSC) labs on Or
 - [ ] GDB
 
 ### References
-Official Class Website (2026)
-Class Lab Website
-Exercise Website
+- Official Class Website (2026)
+- Class Lab Website
+- Exercise Website
