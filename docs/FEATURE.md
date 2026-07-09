@@ -6,8 +6,9 @@
 - [x] T1.2: 確認指令存在
 - [x] T1.3: 編譯一個最小檔案
 - [x] T1.4: 檢查編譯出來的檔案是不是 RISC-V 格式
-### ***Feature2: Linker**
-- [x] T2.1: 建立 `linker.ld`
-- [x] T2.2: 撰寫 Linker Script (`SECTIONS`)
-- [x] T2.3: 確認 `linker.ld` 已放置於 `labs/lab0/linker/`
-- [x] T2.4: 完成 Linker Script 準備，待下一階段進行 Linking
+### **Feature2: Linker**
+- [x] T2.1: 完成 Linker Script (`SECTIONS`)
+### **Feature3: QEMU**
+- [x] T3.1: 安裝 `qemu-system-riscv64`
+- [x] T3.2: 確認 QEMU 指令存在
+- [x] T3.3: 暫不執行 kernel，待產生 `kernel.bin` 後再進行 QEMU 驗證
