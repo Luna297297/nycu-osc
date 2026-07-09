@@ -20,8 +20,8 @@ Self-study implementation of the NYCU Operating System Capstone (OSC) labs on Or
 ### Progress
 #### Lab0
 - [x] Cross Compiler
-- [ ] Linker
-- [ ] QEMU
+- [x] Linker
+- [x] QEMU
 - [ ] FIT Image
 - [ ] UART
 - [ ] GDB
