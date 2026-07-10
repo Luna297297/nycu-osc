@@ -12,12 +12,12 @@
 - [x] T3.1: 安裝 `qemu-system-riscv64`
 - [x] T3.2: 確認 QEMU 指令存在
 - [x] T3.3: 暫不執行 kernel，待產生 `kernel.bin` 後再進行 QEMU 驗證
-### **Feature4: Feature 4：Source Code → Object File**
+### **Feature4: Source Code → Object File**
 使用 Cross Compiler 將 Assembly 編譯成 Relocatable ELF（Object File）。
-- [ ] T4.1: 建立 `a.S`
-- [ ] T4.2: 使用 `riscv64-unknown-elf-gcc` 編譯為 `a.o`
-- [ ] T4.3: 確認 `a.o` 為 RISC-V Relocatable ELF
-- [ ] T4.4: 使用 `objdump` 檢視 `.text` 與組合語言內容
+- [x] T4.1: 建立 `a.S`
+- [x] T4.2: 使用 `riscv64-unknown-elf-gcc` 編譯為 `a.o`
+- [x] T4.3: 確認 `a.o` 為 RISC-V Relocatable ELF
+- [x] T4.4: 使用 `objdump` 檢視 `.text` 與組合語言內容
 ### **Feature 5：Object File → Executable ELF**
 使用 Linker 將 Object File 配置 Memory Layout，產生 Executable ELF。
 - [ ] T5.1: 使用 `linker.ld` 連結 `a.o`
