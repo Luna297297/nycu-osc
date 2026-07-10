@@ -26,10 +26,8 @@
 - [x] T5.4: 檢查 `_start` 已配置至正確記憶體位址
 ### **Feature 6：Executable ELF → Raw Binary**
 將 Executable ELF 轉換為可供 Bootloader 使用的 Raw Binary。
-- [ ] T6.1: 使用 `objcopy` 將 `kernel.elf` 轉換為 `kernel.bin`
-- [ ] T6.2: 確認 `kernel.bin` 已成功產生
-- [ ] T6.3: 比較 `kernel.elf` 與 `kernel.bin` 的差異
-- [ ] T6.4: 理解 Raw Binary 在 Boot Flow 中的角色
+- [x] T6.1: 使用 `objcopy` 將 `kernel.elf` 轉換為 `kernel.bin`
+- [x] T6.2: 確認 `kernel.bin` 已成功產生
 ### **Feature 7：Verify on QEMU**
 在部署到 Orange Pi RV2 前，先使用 QEMU 驗證 Kernel Image。
 - [ ] T7.1: 使用 `kernel.bin` 啟動 QEMU
