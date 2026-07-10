@@ -20,10 +20,10 @@
 - [x] T4.4: 使用 `objdump` 檢視 `.text` 與組合語言內容
 ### **Feature 5：Object File → Executable ELF**
 使用 Linker 將 Object File 配置 Memory Layout，產生 Executable ELF。
-- [ ] T5.1: 使用 `linker.ld` 連結 `a.o`
-- [ ] T5.2: 產生 `kernel.elf`
-- [ ] T5.3: 確認 `kernel.elf` 為 Executable ELF
-- [ ] T5.4: 檢查 `_start` 已配置至正確記憶體位址
+- [x] T5.1: 使用 `linker.ld` 連結 `a.o`
+- [x] T5.2: 產生 `kernel.elf`
+- [x] T5.3: 確認 `kernel.elf` 為 Executable ELF
+- [x] T5.4: 檢查 `_start` 已配置至正確記憶體位址
 ### **Feature 6：Executable ELF → Raw Binary**
 將 Executable ELF 轉換為可供 Bootloader 使用的 Raw Binary。
 - [ ] T6.1: 使用 `objcopy` 將 `kernel.elf` 轉換為 `kernel.bin`
