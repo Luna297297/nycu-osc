@@ -11,5 +11,5 @@ _start:
         j loop_start
     loop_end:
 
-    // TODO: Set up the stack pointer
+    la sp, _end
     tail start_kernel
