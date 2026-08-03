@@ -3,20 +3,21 @@
 #include "string.h"
 #include "uart.h"
 
+/*
+void start_kernel() {
+    while (1) {
+        uart_puts("LUNA\n");
+    }
+}
+*/
 
 void start_kernel() {
     uart_puts("\nStarting kernel ...\n");
+
     uart_puts("SBI specification version: ");
     uart_hex(sbi_get_spec_version());
     uart_puts("\n");
 
-    uart_puts("Probe Set Timer: ");
-    uart_hex(sbi_probe_extension(SBI_EXT_SET_TIMER));
-    uart_puts("\n");
-
-    uart_puts("Probe Shutdown:  ");
-    uart_hex(sbi_probe_extension(SBI_EXT_SHUTDOWN));
-    uart_puts("\n");
     while (1) {
         char buffer[64];
 
@@ -25,6 +26,5 @@ void start_kernel() {
         to_buffer(buffer, sizeof(buffer));
         command_parser(buffer);
     }
-    
 }
 
