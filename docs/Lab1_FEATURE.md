@@ -31,15 +31,15 @@
 - [ ] T3.5: 處理 `\n` → `\r\n`
 - [ ] T3.6: 處理未知指令
 
-### **Feature4: System Information (SBI)**
-實作 SBI (Supervisor Binary Interface) 呼叫，透過 OpenSBI 取得系統資訊，並整合至 Shell。
+### **Feature4: SBI Base Extension**
+實作 SBI (Supervisor Binary Interface) Base Extension Wrapper，透過 OpenSBI 查詢系統資訊，並理解 Kernel 與 Firmware 的互動方式。
 
-- [ ] T4.1: 理解 SBI Calling Convention
-- [ ] T4.2: 實作 `sbi_ecall()`
-- [ ] T4.3: 取得 OpenSBI Specification Version
-- [ ] T4.4: 取得 Implementation ID
-- [ ] T4.5: 取得 Implementation Version
-- [ ] T4.6: 實作 `info` 指令
+- [x] T4.1: 理解 SBI Calling Convention
+- [x] T4.2: 理解 `ecall` 與 Register Passing (`a0~a7`)
+- [x] T4.3: 理解 `sbi_ecall()` Wrapper 的實作
+- [x] T4.4: 實作 `sbi_get_spec_version()`
+- [x] T4.5: 實作 `sbi_probe_extension()`
+- [x] T4.6: 驗證 SBI Version 與 Extension Probe 結果
 
 ### Future Improvement
 - [ ] Verify handling when `.bss` size is not a multiple of 8 bytes.
