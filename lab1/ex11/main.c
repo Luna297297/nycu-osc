@@ -6,12 +6,14 @@
 #define LSR_TDRQ  (1 << 5)
 
 char uart_getc() {
-    while (!(*UART_LSR & LSR_DR)) { ; }
+    while (!(*UART_LSR & LSR_DR))
+        ;
     return *UART_RBR;
 }
 
 void uart_putc(char c) {
-    while (!(*UART_LSR & LSR_TDRQ)) { ; }
+    while (!(*UART_LSR & LSR_TDRQ)) 
+        ;
     *UART_THR = c;
 }
 
