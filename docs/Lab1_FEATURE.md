@@ -24,11 +24,11 @@
 ### **Feature3: Simple Shell**
 利用 UART Driver 建立最小可互動 Shell，讓使用者能透過 UART 輸入指令並取得回應。
 
-- [ ] T3.1: 建立 Command Loop
-- [ ] T3.2: 接收使用者輸入
-- [ ] T3.3: 實作 `help`
-- [ ] T3.4: 實作 `hello`
-- [ ] T3.5: 處理 `\n` → `\r\n`
+- [x] T3.1: 建立 Command Loop
+- [x] T3.2: 建立 Command Buffer 並接收使用者輸入
+- [ ] T3.3: 實作 Command Parser
+- [ ] T3.4: 實作 Command Handler（`help`、`hello`）
+- [ ] T3.5: 處理輸出格式（`\n` → `\r\n`）
 - [ ] T3.6: 處理未知指令
 
 ### **Feature4: SBI Base Extension**
