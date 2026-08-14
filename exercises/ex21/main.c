@@ -92,11 +92,17 @@ int fdt_path_offset(const void* fdt, const char* path) {
             }
             
             case FDT_END_NODE: {
+                char *last = strrchr(cur_path, '/');
 
+                if (last != NULL) {
+                    *last = '\0';
+                }
+
+                break;
             }
             
             case FDT_PROP: {
-
+                const
             }
 
             case FDT_NOP: {
