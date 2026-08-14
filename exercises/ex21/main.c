@@ -23,6 +23,12 @@ struct fdt_header {
     uint32_t size_dt_struct;
 };
 
+struct fdt_property {
+    uint32_t len;
+    uint32_t nameoff;
+    char data[];
+};
+
 // 32bit endian conversion
 static inline uint32_t bswap32(uint32_t x) {
     return __builtin_bswap32(x);
@@ -39,7 +45,7 @@ static inline const void* align_up(const void* ptr, size_t align) {
 }
 
 int fdt_path_offset(const void* fdt, const char* path) {
-    // Get DTB base addr
+    // Parse DTB header
     const struct fdt_header *header = fdt;
     
     // Validate Magic Number
@@ -102,11 +108,16 @@ int fdt_path_offset(const void* fdt, const char* path) {
             }
             
             case FDT_PROP: {
-                const
+                const struct fdt_property *prop = (const struct fdt_property *)p;
+                uint32_t len = bswap32(prop->len);
+
+                p += sizeof(struct fdt_property) + len;
+                p = align_up(p, 4);
+                break;
             }
 
             case FDT_NOP: {
-                continue;
+                break;
             }
 
             default: {
