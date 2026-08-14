@@ -8,6 +8,7 @@
 #define FDT_PROP       0x00000003
 #define FDT_NOP        0x00000004
 #define FDT_END        0x00000009
+#define MAX_PATH_LEN   256
 
 struct fdt_header {
     uint32_t magic;
@@ -22,20 +23,92 @@ struct fdt_header {
     uint32_t size_dt_struct;
 };
 
+// 32bit endian conversion
 static inline uint32_t bswap32(uint32_t x) {
     return __builtin_bswap32(x);
 }
 
+// 64bit endian conversion
 static inline uint64_t bswap64(uint64_t x) {
     return __builtin_bswap64(x);
 }
 
+// 將目前 ptr 對齊到第一個大於或等於目前位址的 align-byte aligned address。
 static inline const void* align_up(const void* ptr, size_t align) {
     return (const void*)(((uintptr_t)ptr + align - 1) & ~(align - 1));
 }
 
 int fdt_path_offset(const void* fdt, const char* path) {
-    // TODO: Implement this function
+    // Get DTB base addr
+    const struct fdt_header *header = fdt;
+    
+    // Validate Magic Number
+    uint32_t magic = bswap32(header->magic);
+    if (magic != 0xd00dfeed) {
+        return -1; 
+    }
+
+    // Get the addr of structure block
+    uint32_t struct_offset = bswap32(header->off_dt_struct);
+    const char *struct_base = (const char *)fdt + struct_offset;
+    const char *p = struct_base;
+
+    // use char to track current path
+    char cur_path[MAX_PATH_LEN] = "";
+    
+    while (1) {
+        const char *token_pos = p;
+        // Used to calculate node offset when a matching path is found.
+
+        uint32_t token = bswap32(*(const uint32_t *)p);
+        // Read the current token with 32bit endian conversion.
+
+        p += sizeof(uint32_t);
+        // Skip cur token (4 bytes).
+        // P now points to the token payload.
+
+        if (token == FDT_END) {
+            break;
+        }
+        int depth = 0;
+        switch (token) {
+            case FDT_BEGIN_NODE : {
+                const char *node_name = p;
+                
+                if (strlen(node_name) > 0) {
+                    strcat(cur_path, "/");
+                    strcat(cur_path, node_name);
+                }
+
+                if (strcmp(cur_path, path) == 0) {
+                    return (int)(token_pos - struct_base);
+                }
+
+                p += strlen(node_name) + 1;
+                // Used +1 to skip '\0'
+                p = align_up(p, 4);
+
+                break;
+            }
+            
+            case FDT_END_NODE: {
+
+            }
+            
+            case FDT_PROP: {
+
+            }
+
+            case FDT_NOP: {
+                continue;
+            }
+
+            default: {
+                return -1;
+            }
+        }
+    }
+    return -1;
 }
 
 const void* fdt_getprop(const void* fdt,

@@ -9,9 +9,9 @@
 - [x] T1.1: 理解 Device Tree 的用途與整體架構
 - [x] T1.2: 理解 FDT 四個區塊（Header、Memory Reservation、Structure Block、Strings Block）
 - [x] T1.3: 理解 Header 各欄位（magic、off_dt_struct、off_dt_strings）
-- [ ] T1.4: 驗證 Magic Number
-- [ ] T1.5: 取得 Structure Block 起始位置
-- [ ] T1.6: 取得 Strings Block 起始位置
+- [x] T1.4: 驗證 Magic Number
+- [x] T1.5: 取得 Structure Block 起始位置
+- [x] T1.6: 取得 Strings Block 起始位置
 
 ---
 
