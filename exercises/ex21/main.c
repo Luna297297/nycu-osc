@@ -132,7 +132,58 @@ const void* fdt_getprop(const void* fdt,
                         int nodeoffset,
                         const char* name,
                         int* lenp) {
-    // TODO: Implement this function
+    const struct fdt_header *header = fdt;
+    
+    uint32_t struct_offset = bswap32(header->off_dt_struct);
+    const char *struct_base = (const char*)fdt + struct_offset;
+    
+    uint32_t strings_offset = bswap32(header->off_dt_strings);
+    const char *strings_base = (const char *)fdt + strings_offset;
+
+    const char *node = struct_base + nodeoffset;
+    const char *p = node;
+    
+   
+    p += sizeof(uint32_t); // skip FDT_BEGIN_NODE
+
+    const char *node_name = p; // now p points to node name
+    p += strlen(node_name) + 1;
+    p = align_up(p, 4); 
+    
+    while (1) {
+        uint32_t token = bswap32(*(const uint32_t *)p);
+        p += sizeof(uint32_t);
+
+        switch (token) {
+            case FDT_END_NODE: {
+                return NULL;
+            }
+            
+            case FDT_PROP: {
+                const struct fdt_property *prop = (const struct fdt_property *)p;
+                uint32_t nameoff = bswap32(prop -> nameoff);
+                uint32_t len = bswap32(prop->len);
+                const char *prop_name = strings_base + nameoff;
+
+                if (!strcmp(prop_name, name)) {
+                    *lenp = len;
+                    return prop->data;
+                }
+
+                p += sizeof(struct fdt_property) + len;
+                p = align_up(p, 4);
+                break;
+            }
+
+            case FDT_NOP: {
+                break
+            }
+
+            default: {
+                return NULL;
+            }
+        }
+    }
 }
 
 int main() {
