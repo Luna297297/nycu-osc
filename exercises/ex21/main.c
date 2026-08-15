@@ -29,6 +29,32 @@ struct fdt_property {
     char data[];
 };
 
+
+static int path_match(const char *cur, const char *tar) {
+    const char *c = cur;
+    const char *t = tar;
+
+    while (1) {
+        if (*c == '@' && (*t == '/' || *t == '\0')) {
+            while (*c != '/' && *c != '\0') {
+                c++;
+            }
+            continue;
+        }
+        
+        if (*c != *t) {
+            return 0;
+        }
+
+        if (*c == '\0') {
+            return 1;
+        }
+        
+        c++;
+        t++;
+    }
+}
+
 // 32bit endian conversion
 static inline uint32_t bswap32(uint32_t x) {
     return __builtin_bswap32(x);
@@ -85,8 +111,8 @@ int fdt_path_offset(const void* fdt, const char* path) {
                     strcat(cur_path, "/");
                     strcat(cur_path, node_name);
                 }
-
-                if (strcmp(cur_path, path) == 0) {
+                
+                if (path_match(cur_path, path)) {
                     return (int)(token_pos - struct_base);
                 }
 
@@ -176,7 +202,7 @@ const void* fdt_getprop(const void* fdt,
             }
 
             case FDT_NOP: {
-                break
+                break;
             }
 
             default: {
@@ -224,7 +250,9 @@ int main() {
     printf("compatible: %.*s\n", len, (const char*)prop);
 
     offset = fdt_path_offset(fdt, "/memory");
+    printf("memory offset = %d\n", offset);
     prop = fdt_getprop(fdt, offset, "reg", &len);
+    printf("prop = %p, len = %d\n", prop, len);
     const uint64_t* reg = (const uint64_t*)prop;
     printf("memory: base=0x%lx size=0x%lx\n", bswap64(reg[0]), bswap64(reg[1]));
 
