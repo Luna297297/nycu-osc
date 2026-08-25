@@ -74,9 +74,7 @@ void initrd_list(const void* rd) {
         const struct cpio_t *c = (const struct cpio_t *) p;
 
         // Validate Magic Number
-        if (memcmp(c->magic, "070701", 6) != 0) {
-            return;
-        }
+        if (memcmp(c->magic, "070701", 6) != 0) return;
 
         // move p to the start point of file name
         const char *filename = p + sizeof(struct cpio_t);
@@ -88,7 +86,7 @@ void initrd_list(const void* rd) {
 
         if (strcmp(filename, "TRAILER!!!") == 0) break;
 
-        printf("%10d %s\n", file_len, filename);
+        printf("%d %s\n", file_len, filename);
 
         p = filename;
         p += name_len;
@@ -99,7 +97,32 @@ void initrd_list(const void* rd) {
 }
 
 void initrd_cat(const void* rd, const char* filename) {
-    // TODO: Implement this function
+    const char *p = (const char *) rd;
+
+    while(1) {
+        const struct cpio_t *c = (const struct cpio_t *) p;
+
+        if (memcmp(c->magic, "070701", 6) != 0) return;
+
+        const char *cur_filename = p + sizeof(struct cpio_t);
+
+        int name_len = hextoi(c->namesize, 8);
+        int file_len = hextoi(c->filesize, 8);
+
+        if (strcmp(cur_filename, "TRAILER!!!") == 0) {
+            printf("%s : No such file.\n", filename);
+            return;
+        } else if (strcmp(cur_filename, filename) == 0) {
+            printf("%s : %d\n", filename, file_len);
+            return;
+        } else {
+            p = cur_filename;
+            p += name_len;
+            p = align_up(p, 4);
+            p += file_len;
+            p = align_up(p, 4);
+        }
+    }
 }
 
 int main() {
