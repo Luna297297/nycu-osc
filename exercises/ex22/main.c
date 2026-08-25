@@ -84,14 +84,11 @@ void initrd_list(const void* rd) {
         // Print Info of current file
         int file_len = hextoi(c->filesize, 8);
         int name_len = hextoi(c->namesize, 8);
-        
-        char name[name_len];
-        memcpy(name, filename, name_len);
-        name[name_len - 1] = '\0';
 
-        if (strcmp(name, "TRAILER!!!") == 0) break;
 
-        printf("%10d %s\n", file_len, name);
+        if (strcmp(filename, "TRAILER!!!") == 0) break;
+
+        printf("%10d %s\n", file_len, filename);
 
         p = filename;
         p += name_len;
