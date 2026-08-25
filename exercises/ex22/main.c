@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 struct cpio_t {
     char magic[6];
@@ -42,18 +43,62 @@ static int hextoi(const char* s, int n) {
 }
 
 /**
+ * @brief Align a pointer to the first address greater than or equal to the current address
+ *        that is aligned to the specified byte boundary.
+ *
+ * @param ptr Pointer to be aligned.
+ * @param align Alignment size in bytes.
+ * @return Aligned pointer.
+ */
+static inline const void *align_up(const void *ptr, size_t align) {
+    return (const void *)(((uintptr_t)ptr + align - 1) & ~(align - 1));
+}
+
+/**
  * @brief Align a number to the nearest multiple of a given number
  *
  * @param n number
  * @param byte alignment
  * @return aligned number
- */
-static int align(int n, int byte) {
-    return (n + byte - 1) & ~(byte - 1);
-}
+ *
+ * static int align(int n, int byte) {
+ *    return (n + byte - 1) & ~(byte - 1);
+ * }
+**/
+
 
 void initrd_list(const void* rd) {
-    // TODO: Implement this function
+    const char *p = (const char *)rd; //get start address and iterate the initrd
+
+    while (1) {
+        const struct cpio_t *c = (const struct cpio_t *) p;
+
+        // Validate Magic Number
+        if (memcmp(c->magic, "070701", 6) != 0) {
+            return;
+        }
+
+        // move p to the start point of file name
+        const char *filename = p + sizeof(struct cpio_t);
+
+        // Print Info of current file
+        int file_len = hextoi(c->filesize, 8);
+        int name_len = hextoi(c->namesize, 8);
+        
+        char name[name_len];
+        memcpy(name, filename, name_len);
+        name[name_len - 1] = '\0';
+
+        if (strcmp(name, "TRAILER!!!") == 0) break;
+
+        printf("%10d %s\n", file_len, name);
+
+        p = filename;
+        p += name_len;
+        p = align_up(p, 4); // first padding
+        p += file_len;
+        p = align_up(p, 4); // second padding
+    }
 }
 
 void initrd_cat(const void* rd, const char* filename) {
