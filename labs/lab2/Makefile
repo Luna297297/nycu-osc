@@ -10,9 +10,9 @@ ELF     := kernel.elf
 
 BOARD ?= qemu
 
-ifeq ($(BOARD), qemu)
+ifeq ($(BOARD),qemu)
 LINKER := linker/qemu.ld
-else ifeq ($(BOARD), orangepi)
+else ifeq ($(BOARD),orangepi)
 LINKER := linker/orangepi.ld
 else
 $(error Unknown BOARD: $(BOARD))
@@ -22,7 +22,7 @@ CFLAGS  := -mcmodel=medany -ffreestanding -nostdlib -g -Wall -Iinclude
 
 build: clean
 	$(CC) $(CFLAGS) -c src/*.S src/*.c
-	$(LD) -T link.ld -o $(ELF) *.o
+	$(LD) -T $(LINKER) -o $(ELF) *.o
 	$(OBJCOPY) -O binary $(ELF) $(TARGET)
 
 run: build
