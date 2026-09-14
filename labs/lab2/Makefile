@@ -8,6 +8,16 @@ QEMU    ?= qemu-system-riscv64
 TARGET  := kernel.bin
 ELF     := kernel.elf
 
+BOARD ?= qemu
+
+ifeq ($(BOARD), qemu)
+LINKER := linker/qemu.ld
+else ifeq ($(BOARD), orangepi)
+LINKER := linker/orangepi.ld
+else
+$(error Unknown BOARD: $(BOARD))
+endif
+
 CFLAGS  := -mcmodel=medany -ffreestanding -nostdlib -g -Wall -Iinclude
 
 build: clean
