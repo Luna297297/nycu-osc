@@ -7,17 +7,21 @@
  *  UART MMIO Registers
  * ========================= */
 
-#define UART_BASE 0xD4017000UL
+#if defined(CONFIG_BOARD_QEMU)
+#define UART_BASE       0x10000000UL
+#define UART_LSR_OFFSET 0x05
+typedef uint8_t uart_reg_t;
+#elif defined(CONFIG_BOARD_ORANGEPI)
+#define UART_BASE       0xD4017000UL
+#define UART_LSR_OFFSET 0x14
+typedef uint32_t uart_reg_t;
+#else
+#error "Unsupported board"
+#endif
 
-/*
- * SpacemiT K1 UART
- * Register width : 32-bit
- * LSR offset     : 0x14
- */
-
-#define UART_RBR ((volatile uint32_t *)(UART_BASE + 0x00))
-#define UART_THR ((volatile uint32_t *)(UART_BASE + 0x00))
-#define UART_LSR ((volatile uint32_t *)(UART_BASE + 0x14))
+#define UART_RBR ((volatile uart_reg_t *)(UART_BASE + 0x00))
+#define UART_THR ((volatile uart_reg_t *)(UART_BASE + 0x00))
+#define UART_LSR ((volatile uart_reg_t *)(UART_BASE + UART_LSR_OFFSET))
 
 /* Line Status Register bits */
 #define LSR_DR   (1U << 0)

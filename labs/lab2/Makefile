@@ -12,13 +12,15 @@ BOARD ?= qemu
 
 ifeq ($(BOARD),qemu)
 LINKER := linker/qemu.ld
+BOARD_CFLAGS := -DCONFIG_BOARD_QEMU
 else ifeq ($(BOARD),orangepi)
 LINKER := linker/orangepi.ld
+BOARD_CFLAGS := -DCONFIG_BOARD_ORANGEPI
 else
 $(error Unknown BOARD: $(BOARD))
 endif
 
-CFLAGS  := -mcmodel=medany -ffreestanding -nostdlib -g -Wall -Iinclude
+CFLAGS  := -mcmodel=medany -ffreestanding -nostdlib -g -Wall -Iinclude $(BOARD_CFLAGS)
 
 build: clean
 	$(CC) $(CFLAGS) -c src/*.S src/*.c
