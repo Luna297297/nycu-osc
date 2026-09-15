@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #define FDT_BEGIN_NODE 0x00000001
 #define FDT_END_NODE   0x00000002
 #define FDT_PROP       0x00000003
