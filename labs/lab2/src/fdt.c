@@ -1,32 +1,5 @@
-include "fdt.h"
-
-
-#define FDT_BEGIN_NODE 0x00000001
-#define FDT_END_NODE   0x00000002
-#define FDT_PROP       0x00000003
-#define FDT_NOP        0x00000004
-#define FDT_END        0x00000009
-#define MAX_PATH_LEN   256
-
-struct fdt_header {
-    uint32_t magic;
-    uint32_t totalsize;
-    uint32_t off_dt_struct;
-    uint32_t off_dt_strings;
-    uint32_t off_mem_rsvmap;
-    uint32_t version;
-    uint32_t last_comp_version;
-    uint32_t boot_cpuid_phys;
-    uint32_t size_dt_strings;
-    uint32_t size_dt_struct;
-};
-
-struct fdt_property {
-    uint32_t len;
-    uint32_t nameoff;
-    char data[];
-};
-
+#include "fdt.h"
+#include "string.h"
 
 static int path_match(const char *cur, const char *tar) {
     const char *c = cur;
@@ -55,13 +28,12 @@ static int path_match(const char *cur, const char *tar) {
 
 // 32bit endian conversion
 static inline uint32_t bswap32(uint32_t x) {
-    return __builtin_bswap32(x);
+    return ((x & 0x000000ffU) << 24) |
+           ((x & 0x0000ff00U) << 8)  |
+           ((x & 0x00ff0000U) >> 8)  |
+           ((x & 0xff000000U) >> 24);
 }
 
-// 64bit endian conversion
-static inline uint64_t bswap64(uint64_t x) {
-    return __builtin_bswap64(x);
-}
 
 // 將目前 ptr 對齊到第一個大於或等於目前位址的 align-byte aligned address。
 static inline const void* align_up(const void* ptr, size_t align) {
@@ -84,7 +56,8 @@ int fdt_path_offset(const void* fdt, const char* path) {
     const char *p = struct_base;
 
     // use char to track current path
-    char cur_path[MAX_PATH_LEN] = "";
+    char cur_path[MAX_PATH_LEN];
+    cur_path[0] = '\0';
     int idx = 0;
     
     while (1) {
@@ -137,6 +110,7 @@ int fdt_path_offset(const void* fdt, const char* path) {
                         break;
                     }
                 }
+                break;
             }
             
             case FDT_PROP: {
@@ -179,7 +153,13 @@ const void* fdt_getprop(const void* fdt,
     p += sizeof(uint32_t); // skip FDT_BEGIN_NODE
 
     const char *node_name = p; // now p points to node name
-    p += strlen(node_name) + 1;
+    int idx = 0;
+
+    while (*node_name) {
+        idx++;
+        node_name++;
+    }
+    p += idx + 1;
     p = align_up(p, 4); 
     
     while (1) {
@@ -228,7 +208,7 @@ uintptr_t fdt_get_uart_base(const void* fdt) {
     if (offset < 0) return 0; // UART node not found
 
     int len;
-    const void* prop = fdt_get_prop(fdt, offset, "reg", &len);
+    const void* prop = fdt_getprop(fdt, offset, "reg", &len);
 
     if (!prop) return 0; // Missing "reg" property
     if (len != sizeof(uint32_t) * 4) return 0; // Unexpected reg format

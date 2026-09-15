@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdint.h>
 
 #define FDT_BEGIN_NODE 0x00000001
@@ -27,15 +28,6 @@ struct fdt_property {
     uint32_t nameoff;
     char data[];
 };
-
-
-/* Internal Helpers */
-// 32bit endian conversion
-static inline uint32_t bswap32(uint32_t x);
-// 64bit endian conversion
-static inline uint64_t bswap64(uint64_t x);
-// 將目前 ptr 對齊到第一個大於或等於目前位址的 align-byte aligned address。
-static inline const void* align_up(const void* ptr, size_t align);
 
 /* Public APIs */
 int fdt_path_offset(const void* fdt, const char* path);
