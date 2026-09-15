@@ -1,7 +1,5 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+include "fdt.h"
+
 
 #define FDT_BEGIN_NODE 0x00000001
 #define FDT_END_NODE   0x00000002
@@ -87,6 +85,7 @@ int fdt_path_offset(const void* fdt, const char* path) {
 
     // use char to track current path
     char cur_path[MAX_PATH_LEN] = "";
+    int idx = 0;
     
     while (1) {
         const char *token_pos = p;
@@ -106,17 +105,22 @@ int fdt_path_offset(const void* fdt, const char* path) {
         switch (token) {
             case FDT_BEGIN_NODE : {
                 const char *node_name = p;
+                const char *name = node_name;
                 
-                if (strlen(node_name) > 0) {
-                    strcat(cur_path, "/");
-                    strcat(cur_path, node_name);
+                if (*node_name) {
+                    cur_path[idx++] = '/';
                 }
+                
+                while (*name) {
+                    cur_path[idx++] = *name++;
+                }
+                cur_path[idx] = '\0';
                 
                 if (path_match(cur_path, path)) {
                     return (int)(token_pos - struct_base);
                 }
 
-                p += strlen(node_name) + 1;
+                p += (name - node_name) + 1;
                 // Used +1 to skip '\0'
                 p = align_up(p, 4);
 
@@ -124,13 +128,15 @@ int fdt_path_offset(const void* fdt, const char* path) {
             }
             
             case FDT_END_NODE: {
-                char *last = strrchr(cur_path, '/');
+                
+                while(idx > 0) {
+                    idx--;
 
-                if (last != NULL) {
-                    *last = '\0';
+                    if (cur_path[idx] == '/') {
+                        cur_path[idx] = '\0';
+                        break;
+                    }
                 }
-
-                break;
             }
             
             case FDT_PROP: {
@@ -212,55 +218,4 @@ const void* fdt_getprop(const void* fdt,
     }
 }
 
-int main() {
-    /* Prepare the device tree blob */
-    FILE* fp = fopen("qemu.dtb", "rb");
-    if (!fp) {
-        perror("fopen");
-        return EXIT_FAILURE;
-    }
-    fseek(fp, 0, SEEK_END);
-    long sz = ftell(fp);
-    void* fdt = malloc(sz);
-    fseek(fp, 0, SEEK_SET);
-    if (fread(fdt, 1, sz, fp) != sz) {
-        fprintf(stderr, "Failed to read the device tree blob\n");
-        free(fdt);
-        fclose(fp);
-        return EXIT_FAILURE;
-    }
-    fclose(fp);
-
-    /* Find the node offset */
-    int offset = fdt_path_offset(fdt, "/cpus/cpu@0/interrupt-controller");
-    if (offset < 0) {
-        fprintf(stderr, "fdt_path_offset\n");
-        free(fdt);
-        return EXIT_FAILURE;
-    }
-
-    /* Get the node property */
-    int len;
-    const void* prop = fdt_getprop(fdt, offset, "compatible", &len);
-    if (!prop) {
-        fprintf(stderr, "fdt_getprop\n");
-        free(fdt);
-        return EXIT_FAILURE;
-    }
-    printf("compatible: %.*s\n", len, (const char*)prop);
-
-    offset = fdt_path_offset(fdt, "/memory");
-    printf("memory offset = %d\n", offset);
-    prop = fdt_getprop(fdt, offset, "reg", &len);
-    printf("prop = %p, len = %d\n", prop, len);
-    const uint64_t* reg = (const uint64_t*)prop;
-    printf("memory: base=0x%lx size=0x%lx\n", bswap64(reg[0]), bswap64(reg[1]));
-
-    offset = fdt_path_offset(fdt, "/chosen");
-    prop = fdt_getprop(fdt, offset, "linux,initrd-start", &len);
-    const uint64_t* initrd_start = (const uint64_t*)prop;
-    printf("initrd-start: 0x%lx\n", bswap64(initrd_start[0]));
-
-    free(fdt);
-    return 0;
-}
+uintptr_t fdt_get_uart_base(const void* fdt);
