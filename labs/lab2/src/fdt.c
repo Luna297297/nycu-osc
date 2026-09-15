@@ -110,7 +110,7 @@ int fdt_path_offset(const void* fdt, const char* path) {
                 if (*node_name) {
                     cur_path[idx++] = '/';
                 }
-                
+
                 while (*name) {
                     cur_path[idx++] = *name++;
                 }
@@ -218,4 +218,23 @@ const void* fdt_getprop(const void* fdt,
     }
 }
 
-uintptr_t fdt_get_uart_base(const void* fdt);
+uintptr_t fdt_get_uart_base(const void* fdt) {
+    int offset = fdt_path_offset(fdt, "/soc/uart");
+
+    if (offset < 0) {
+        offset = fdt_path_offset(fdt, "/soc/serial");
+    }
+
+    if (offset < 0) return 0; // UART node not found
+
+    int len;
+    const void* prop = fdt_get_prop(fdt, offset, "reg", &len);
+
+    if (!prop) return 0; // Missing "reg" property
+    if (len != sizeof(uint32_t) * 4) return 0; // Unexpected reg format
+
+    const uint32_t *reg = (const uint32_t *)prop;
+
+    return ((uint64_t)bswap32(reg[0]) << 32) | bswap32(reg[1]);
+
+}
