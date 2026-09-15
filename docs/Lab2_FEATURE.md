@@ -73,8 +73,38 @@
 
 理解並解析 New ASCII CPIO Archive，實作 CPIO Parser。
 
-- [ ] T3.4: 理解 New ASCII CPIO Archive 的資料格式
-- [ ] T3.5: 解析 CPIO Header
-- [ ] T3.6: 解析 Filename 與 File Data
-- [ ] T3.7: 處理 4-Byte Alignment（Padding）
-- [ ] T3.8: 辨識 Archive 結尾（`TRAILER!!!`）
+- [x] T3.4: 理解 New ASCII CPIO Archive 的資料格式
+- [x] T3.5: 解析 CPIO Header
+- [x] T3.6: 解析 Filename 與 File Data
+- [x] T3.7: 處理 4-Byte Alignment（Padding）
+- [x] T3.8: 辨識 Archive 結尾（`TRAILER!!!`）
+
+## Feature4: Kernel Integration
+
+將已完成的 Device Tree Parser 與 Kernel Boot Flow 整合，使 Kernel 能從 Firmware 傳入的 DTB 動態取得硬體資訊，逐步移除 Lab1 的 Hardcoded Hardware Address。
+
+### Feature4.1: Boot Context Integration
+
+理解並建立 Firmware → `_start` → `start_kernel()` 的 Boot ABI 資料傳遞流程。
+
+- [x] T4.1: 理解 OpenSBI / U-Boot 進入 Kernel 時的 Boot ABI
+- [x] T4.2: 理解 `a0` 儲存 Hart ID、`a1` 儲存 DTB Address
+- [x] T4.3: 確認 `_start` 在初始化 `.bss` 與 Stack 時不覆寫 `a0`、`a1`
+- [x] T4.4: 修改 `start_kernel()`，接收 `hartid` 與 `fdt`
+- [x] T4.5: 確認 Kernel 能正確取得 Firmware 傳入的 DTB Pointer
+
+---
+
+### Feature4.2: FDT-based UART Initialization
+
+利用 Device Tree Parser 查詢 UART Node 的 `reg` Property，取得 Runtime UART Base Address，取代 Lab1 的 Hardcoded UART Address。
+
+- [ ] T4.6: 理解 UART 初始化與 FDT Parser 的依賴關係
+- [ ] T4.7: 建立最小的 UART Property Lookup 流程
+- [ ] T4.8: 從 FDT 找到 QEMU / OrangePi 對應的 UART Node
+- [ ] T4.9: 取得 UART Node 的 `reg` Property
+- [ ] T4.10: 解析 `reg` Property，取得 UART Base Address
+- [ ] T4.11: 使用 GDB 或其他方式驗證取得的 UART Base Address
+- [ ] T4.12: 實作 Runtime UART Initialization
+- [ ] T4.13: 移除 Hardcoded `UART_BASE`
+- [ ] T4.14: 驗證 QEMU 與 OrangePi 均能透過 Runtime UART Base 正常輸出
