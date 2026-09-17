@@ -4,6 +4,7 @@ CC      := $(RISCV_GNU)-gcc
 LD      := $(RISCV_GNU)-ld
 OBJCOPY := $(RISCV_GNU)-objcopy
 QEMU    ?= qemu-system-riscv64
+INITRD  ?= ../../exercises/ex22/initramfs.cpio
 
 TARGET  := kernel.bin
 ELF     := kernel.elf
@@ -28,7 +29,7 @@ build: clean
 	$(OBJCOPY) -O binary $(ELF) $(TARGET)
 
 run: build
-	$(QEMU) -M virt -m 256M -kernel $(TARGET) -display none -serial stdio
+	$(QEMU) -M virt -m 256M -kernel $(TARGET) -initrd $(INITRD) -display none -serial stdio
 
 clean:
 	rm -f $(TARGET) $(ELF) *.o
