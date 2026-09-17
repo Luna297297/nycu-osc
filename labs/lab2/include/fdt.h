@@ -1,3 +1,6 @@
+#ifndef FDT_H
+#define FDT_H
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -37,4 +40,10 @@ const void* fdt_getprop(const void* fdt,
                         const char* name,
                         int* lenp);
 
-uintptr_t fdt_get_uart_base(const void* fdt);
+uintptr_t fdt_get_uart_base(const void *fdt);
+
+int fdt_get_initrd_range(const void *fdt,
+                        uintptr_t *start,
+                        uintptr_t *end);
+
+#endif
