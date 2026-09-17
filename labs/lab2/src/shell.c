@@ -1,7 +1,10 @@
+#include "cpio.h"
 #include "sbi.h"
 #include "shell.h"
 #include "string.h"
 #include "uart.h"
+
+#include <stddef.h>
 
 void to_buffer(char buffer[], int size) {
     int idx = 0;
@@ -35,6 +38,8 @@ void cmd_help() {
     uart_puts("  help - show all commands.\n");
     uart_puts("  hello - print Hello World.\n");
     uart_puts("  info - print system info.\n");
+    uart_puts("  ls - list all files.\n");
+    uart_puts("  cat - cat <filename>, find the file.\n");
 }
 
 void cmd_info() {
@@ -48,13 +53,36 @@ void cmd_info() {
     uart_puts("\n");
 }
 
-void command_parser(char buffer[]) {
+void command_parser(char buffer[], const void *initrd_start, const void *initrd_end) {
     if (strcmp(buffer, "hello") == 0) {
         cmd_hello();
     } else if (strcmp(buffer, "help") == 0) {
         cmd_help();
     } else if (strcmp(buffer, "info") == 0) {
         cmd_info();
+    } else if (strcmp(buffer, "ls") == 0) {
+        int ret_initrd_list = initrd_list(initrd_start, initrd_end);
+        if (ret_initrd_list < 0) {
+            uart_puts("Failed to get Initrd list.\n");
+        }
+    } else if (strcmp(buffer, "cat") == 0) {
+        uart_puts("Usage: cat <filename>\n");
+    } else if (buffer[0] == 'c' &&
+               buffer[1] == 'a' &&
+               buffer[2] == 't' &&
+               buffer[3] == ' ') {
+        
+        const char *filename = buffer + 4;
+        if (filename[0] == '\0') {
+            uart_puts("Please enter the filename.\n");
+            return;
+        }
+        
+        int ret_initrd_cat = initrd_cat(initrd_start, initrd_end, filename);
+        if (ret_initrd_cat < 0) {
+            uart_puts(filename);
+            uart_puts(" : Archive Error Or No such file.\n");
+        }
     } else {
         uart_puts("Unknown command: ");
         uart_puts(buffer);

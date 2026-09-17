@@ -5,6 +5,8 @@ void to_buffer(char buffer[], int size);
 void cmd_hello();
 void cmd_help();
 void cmd_info();
-void command_parser(char buffer[]);
+void command_parser(char buffer[],
+                    const void *initrd_start,
+                    const void *initrd_end);
 
 #endif
