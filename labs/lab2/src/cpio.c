@@ -1,10 +1,11 @@
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "cpio.h"
+#include "string.h"
+#include "uart.h"
+
+#include <stddef.h>
 #include <stdint.h>
 
-struct cpio_t {
+struct cpio_new_header {
     char magic[6];
     char ino[8];
     char mode[8];
@@ -26,20 +27,46 @@ struct cpio_t {
  *
  * @param s hexadecimal string
  * @param n length of the string
- * @return integer value
+ * @param value output parameter for the parsed value
+ * @return 0 on success, -1 on invalid input
  */
-static int hextoi(const char* s, int n) {
-    int r = 0;
-    while (n-- > 0) {
-        r = r << 4;
-        // 每個十六進位字元只佔 4 bits，因此每讀入一個新的 hex digit時，
-        // 要先將目前結果左移 4 bits，才能正確加入該數值。
-        if (*s >= 'A')
-            r += *s++ - 'A' + 10;
-        else if (*s >= 0)
-            r += *s++ - '0';
+static int hextoi(const char *s, size_t n, uint32_t *value)  {
+    if (s == NULL || value == NULL) return -1;
+    if (n == 0 || n > 8) return -1;
+    
+    uint32_t res = 0;
+
+    for (size_t i = 0; i < n; i++) {
+        char c = s[i];
+
+        if (c >= '0' && c <= '9') {
+            res = (res << 4) + (c - '0');
+        } else if (c >= 'A' && c <= 'F') {
+            res = (res << 4) + (c - 'A' + 10);
+        } else if (c >= 'a' && c <= 'f') {
+            res = (res << 4) + (c - 'a' + 10);
+        } else {
+            return -1;
+        }
     }
-    return r;
+
+    *value = res;
+    return 0;
+}
+
+
+static int mem_cmp(const char *s1, const char *s2, size_t n) {
+    const char *a = s1;
+    const char *b = s2;
+
+    for(size_t i = 0; i < n; i++) {
+        if(a[i] == b[i]) {
+            continue;
+        } else {
+            return -1;
+        }
+    }
+    return 0;
 }
 
 /**
@@ -54,100 +81,115 @@ static inline const void *align_up(const void *ptr, size_t align) {
     return (const void *)(((uintptr_t)ptr + align - 1) & ~(align - 1));
 }
 
-/**
- * @brief Align a number to the nearest multiple of a given number
- *
- * @param n number
- * @param byte alignment
- * @return aligned number
- *
- * static int align(int n, int byte) {
- *    return (n + byte - 1) & ~(byte - 1);
- * }
-**/
 
 
-void initrd_list(const void* rd) {
-    const char *p = (const char *)rd; //get start address and iterate the initrd
+int initrd_list(const void *start, const void *end) {
+    const char *p = (const char *)start; //get start address and iterate the initrd
+    const char *end_addr = (const char *) end;
+
+    if (p == NULL || end_addr == NULL || p >= end_addr) return -1;
 
     while (1) {
-        const struct cpio_t *c = (const struct cpio_t *) p;
+        if (end_addr - p < sizeof(struct cpio_new_header)) return -1;
+
+        const struct cpio_new_header *c = (const struct cpio_new_header *) p;
 
         // Validate Magic Number
-        if (memcmp(c->magic, "070701", 6) != 0) return;
+        if (mem_cmp(c->magic, "070701", 6) != 0) return -1;
 
         // move p to the start point of file name
-        const char *filename = p + sizeof(struct cpio_t);
+        const char *filename = p + sizeof(struct cpio_new_header);
 
-        // Print Info of current file
-        int file_len = hextoi(c->filesize, 8);
-        int name_len = hextoi(c->namesize, 8);
+        uint32_t name_len = 0;
+        int res_name_len = hextoi(c->namesize, 8, &name_len);
+        
+        if (res_name_len < 0) return -1;
+        if (name_len > end_addr - filename) return -1;
+        if (name_len == 0 || filename[name_len - 1] != '\0') return -1;
 
+        const char *name_end = filename + name_len;
+
+        uint32_t file_len = 0;
+        int res_file_len = hextoi(c->filesize, 8, &file_len);
+
+        if (res_file_len < 0) return -1;
+
+        const char *data_start = align_up(name_end, 4);
+        if (data_start < name_end) return -1;
+        if (data_start > end_addr) return -1;
+
+        if (file_len > end_addr - data_start) return -1;
 
         if (strcmp(filename, "TRAILER!!!") == 0) break;
 
-        printf("%d %s\n", file_len, filename);
+        const char *data_end = data_start + file_len;
+        const char *next_header = align_up(data_end, 4);
+        if (next_header < data_end) return -1;
+        if (next_header > end_addr) return -1;
+        if (next_header <= p) return -1;
 
-        p = filename;
-        p += name_len;
-        p = align_up(p, 4); // first padding
-        p += file_len;
-        p = align_up(p, 4); // second padding
+        p = next_header;
+
+        uart_hex((unsigned long)file_len);
+        uart_puts(" ");
+        uart_puts(filename);
+        uart_puts("\n");
     }
+    return 0;
 }
 
-void initrd_cat(const void* rd, const char* filename) {
-    const char *p = (const char *) rd;
+int initrd_cat(const void *start, const void *end, const char *filename) {
+    const char *p = (const char *) start;
+    const char *end_addr = (const char *) end;
+
+    if (p == NULL || end_addr == NULL || filename == NULL || p >= end_addr) return -1;
 
     while(1) {
-        const struct cpio_t *c = (const struct cpio_t *) p;
+        if (end_addr - p < sizeof(struct cpio_new_header)) return -1;
+        const struct cpio_new_header *c = (const struct cpio_new_header *) p;
 
-        if (memcmp(c->magic, "070701", 6) != 0) return;
+        if (mem_cmp(c->magic, "070701", 6) != 0) return -1;
 
-        const char *cur_filename = p + sizeof(struct cpio_t);
+        const char *curr_filename = p + sizeof(struct cpio_new_header);
 
-        int name_len = hextoi(c->namesize, 8);
-        int file_len = hextoi(c->filesize, 8);
+        uint32_t name_len = 0;
+        int ret_name_len = hextoi(c->namesize, 8, &name_len);
 
-        if (strcmp(cur_filename, "TRAILER!!!") == 0) {
-            printf("%s : No such file.\n", filename);
-            return;
-        } else if (strcmp(cur_filename, filename) == 0) {
-            printf("%s : %d\n", filename, file_len);
-            return;
-        } else {
-            p = cur_filename;
-            p += name_len;
-            p = align_up(p, 4);
-            p += file_len;
-            p = align_up(p, 4);
-        }
+        if (ret_name_len < 0) return -1;
+        if (name_len > end_addr - curr_filename) return -1;
+        if (name_len == 0 || curr_filename[name_len - 1] != '\0') return -1;
+
+        const char *name_end = curr_filename + name_len;
+
+        uint32_t file_len = 0;
+        int ret_file_len = hextoi(c->filesize, 8, &file_len);
+
+        if(ret_file_len < 0) return -1;
+
+        const char *data_start = align_up(name_end, 4);
+        if (data_start < name_end) return -1;
+        if (data_start > end_addr) return -1;
+        if (file_len > end_addr - data_start) return -1;
+
+        if (strcmp(curr_filename, "TRAILER!!!") == 0) {
+            return -1;
+        } else if (strcmp(curr_filename, filename) == 0) {
+            uart_puts(filename);
+            uart_puts("\n");
+            
+            for (uint32_t i = 0; i < file_len; i++) {
+                uart_putc(data_start[i]);
+            }
+            return 0;
+        } 
+
+        const char *data_end = data_start + file_len;
+        const char *next_header = align_up(data_end, 4);
+        
+        if (next_header < data_end) return -1;
+        if (next_header > end_addr) return -1;
+        if (next_header <= p) return -1;
+
+        p = next_header;
     }
-}
-
-int main() {
-    /* Prepare the initial RAM disk */
-    FILE* fp = fopen("initramfs.cpio", "rb"); // 以二進位讀檔
-    if (!fp) {
-        perror("fopen"); // 如果無法開檔，以 fopen: sys message 印出錯誤訊息
-        return EXIT_FAILURE;
-    }
-    fseek(fp, 0, SEEK_END); // 將指標移動到檔案結尾
-    long sz = ftell(fp); // 計算指標距離檔案開頭的位元組數 aka 取得檔案大小
-    void* rd = malloc(sz); // 分配記憶體
-    fseek(fp, 0, SEEK_SET); // 將指標移動到檔案開頭
-    if (fread(rd, 1, sz, fp) != sz) { // 如果存入 buffer 的大小不等於檔案大小
-        fprintf(stderr, "Failed to read the initial RAM disk\n");
-        free(rd);
-        fclose(fp);
-        return EXIT_FAILURE;
-    }
-    fclose(fp);
-
-    initrd_list(rd); //列出 buffer 中所有來自 initramfs.cpio 的檔案名稱和大小
-    initrd_cat(rd, "osc.txt"); // 尋找並輸出 osc.txt 的內容；若不存在則回報
-    initrd_cat(rd, "test.txt"); 
-
-    free(rd); // free buffer，釋放記憶體
-    return 0;
 }

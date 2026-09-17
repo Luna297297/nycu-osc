@@ -218,3 +218,34 @@ uintptr_t fdt_get_uart_base(const void* fdt) {
     return ((uint64_t)bswap32(reg[0]) << 32) | bswap32(reg[1]);
 
 }
+
+int fdt_get_initrd_range(const void *fdt,
+                        uintptr_t *start,
+                        uintptr_t *end) {
+    if (start == NULL || end == NULL)
+    return -1;
+    
+    int offset = fdt_path_offset(fdt, "/chosen");
+    
+    if (offset < 0) return -1; // chosen node not found
+
+    int start_len = 0;
+    const void *start_prop = fdt_getprop(fdt, offset, "linux,initrd-start", &start_len);
+    if (!start_prop) return -1; // Missing "linux,initrd-start" property
+    if (start_len != sizeof(uint32_t)) return -1; // Unexpected linux,initrd-start format
+
+    int end_len = 0;
+    const void *end_prop = fdt_getprop(fdt, offset, "linux,initrd-end", &end_len);
+    if (!end_prop) return -1; // Missing "linux,initrd-end" property
+    if (end_len != sizeof(uint32_t)) return -1; // Unexpected linux,initrd-end format
+
+    uintptr_t parsed_start = (uintptr_t)bswap32(*(const uint32_t *)start_prop);
+    uintptr_t parsed_end = (uintptr_t)bswap32(*(const uint32_t *)end_prop);
+    
+    if (parsed_start >= parsed_end) return -1; // End addr should be greater than start addr
+
+    *start = parsed_start;
+    *end = parsed_end;
+
+    return 0;
+}
