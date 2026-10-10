@@ -30,8 +30,9 @@ build: clean
 
 run: build
 	$(QEMU) -M virt -m 256M -kernel $(TARGET) -initrd $(INITRD) -display none -serial stdio
-
+run-pty: build
+	$(QEMU) -M virt -m 256M -kernel $(TARGET) -initrd $(INITRD) -display none -serial pty
 clean:
 	rm -f $(TARGET) $(ELF) *.o
 
-.PHONY: build run clean
+.PHONY: build run run-pty clean
