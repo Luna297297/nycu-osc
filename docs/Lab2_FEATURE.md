@@ -4,52 +4,9 @@
 
 透過 Shell 的 `load` Command，從 UART 接收 Host 傳來的 Kernel Image，將 Image 放到不會覆蓋目前 Bootloader 的記憶體區域，然後跳轉執行。
 
-目前採用 **QEMU-first、HTSI small-stage** 的開發順序。每個 Stage 只增加一項新假設，必須能獨立編譯、觀察與驗證；完成 QEMU end-to-end 後，才移至 OrangePi RV2。
+### Feature1.1: UART Bootloader Overview
 
-### Feature1.1: Confirmed Understanding
-
-#### Boot Flow
-
-```text
-OpenSBI
-   ↓
-Bootloader Shell
-   │ load
-   ↓
-Binary Loader
-   ├── Validate Magic
-   ├── Parse and Validate Size
-   ├── Receive Payload Directly to RAM
-   ├── fence.i
-   └── Jump with hartid / DTB
-          ↓
-Payload _start
-   ├── Clear Payload BSS
-   ├── Set Payload Stack
-   └── start_kernel(hartid, fdt)
-```
-
-#### Protocol
-
-```text
-Offset  Size  Meaning       Encoding
-0       4     Magic         little-endian uint32 (wire bytes: "BOOT")
-4       4     Payload Size  little-endian uint32
-8       size  Kernel Data   raw bytes, no transformation
-```
-
-#### Design Decisions
-
-- Protocol 只攜帶 Magic、Size 與 Payload；Load Address 由 Bootloader 決定。
-- 不配置 temporary kernel buffer；payload bytes 直接寫入 `[destination, destination + size)`。
-- Shell 使用 text UART semantics；Loader 使用 raw UART semantics，不得轉換 `0x00`、`0x0a` 或 `0x0d`。
-- Magic 或 Size 驗證失敗時顯示錯誤並返回 Shell，方便第一版除錯。
-- Size 合法後才能接收 Payload；整個 destination range 必須位於安全 RAM，且不得覆寫 Bootloader、DTB 或 Initrd。
-- Basic Exercise 1 先將 QEMU Payload link/load/entry address 設為 `0x82000000`，避開位於 `0x80200000` 的 Bootloader。
-- Bootloader 與 Payload 即使暫時共用 source，也必須針對不同 link address 分別 build。
-- Jump 前執行 `fence.i`，並將保存的 Hart ID 與 DTB Address 依 Boot ABI 傳給 Payload `_start`。
-- QEMU 使用 PTY 將模擬 UART 暴露為 Host device；Host sender 以 binary mode 原樣傳輸 bytes。
-- Advanced Self-Relocation 不納入本 Feature，待 Basic Exercise 完成後獨立處理。
+理解 UART Bootloader 的用途、Protocol、Memory Layout 與完整控制流程。
 
 - [x] T1.1: 理解 Bootloader 與 Loaded Kernel 是兩個不同執行角色
 - [x] T1.2: 理解 UART 是沒有 Message Boundary 的 Byte Stream
@@ -61,20 +18,38 @@ Offset  Size  Meaning       Encoding
 - [x] T1.8: 理解 Shell Text Mode 與 Loader Binary Mode 的責任邊界
 - [x] T1.9: 理解 QEMU PTY、Host Sender 與 Guest UART 的測試模型
 
-### Feature1.2: Incremental Roadmap
+---
 
-> **Current Milestone:** 全局 Roadmap 已確認；下一步才進入 Stage 1 的詳細規劃與設計。
+### Feature1.2: Shell to Loader Transition
 
-- [ ] T1.10 — Stage 1: 驗證 Shell `load` Command 能讓上層觀察到 Loader Request，並安全返回 Shell
-- [ ] T1.11 — Stage 2: 建立 QEMU PTY 與最小 Host Raw-byte Sender，先在 Host 端驗證輸出 Bytes
-- [ ] T1.12 — Stage 3: 驗證 Bootloader Raw UART Receive 不會修改任何 Byte
-- [ ] T1.13 — Stage 4: 接收並驗證固定 4-byte Magic；失敗時回到 Shell
-- [ ] T1.14 — Stage 5: 解析 Little-endian Size，並在接收 Payload 前驗證 Destination Range
-- [ ] T1.15 — Stage 6: 接收恰好 `size` Bytes 至 Target RAM，以 Known Pattern 驗證 Range 與 Content，不執行 Payload
-- [ ] T1.16 — Stage 7: 建立高位址 Payload Build，靜態驗證 ELF Entry、`_start` 與 Section Addresses
-- [ ] T1.17 — Stage 8: 執行 `fence.i` 並跳至 Minimal Payload，驗證 Runtime Entry、Hart ID 與 DTB
-- [ ] T1.18 — Stage 9: 在 QEMU 完整驗證 Bootloader → UART Upload → Full Kernel → Kernel Shell
-- [ ] T1.19 — Stage 10: 在 OrangePi RV2 驗證 SD Bootloader、`/dev/ttyUSBx`、Board Load Address 與 Full Kernel Boot
+加入 `load` Command，讓 Shell 將 Loader Request 回報給上層 Boot Flow；此階段不接收 Binary Data。
+
+- [x] T1.10: 決定 Command Parser 如何表示 Continue Shell 與 Loader Request
+- [x] T1.11: 修改 `command_parser()` 的 Declaration 與 Return Type
+- [x] T1.12: 讓既有 Command Paths 回傳 Continue Shell
+- [x] T1.13: 加入 `load` Command，回傳 Loader Request
+- [x] T1.14: 在 `start_kernel()` 接收 Command Parser Result
+- [x] T1.15: 在上層 Boot Flow 處理 Loader Request，暫時只輸出測試訊息
+- [x] T1.16: 更新 `help` Command，列出 `load`
+- [x] T1.17: Build 並確認沒有新增 Compiler Warning
+- [x] T1.18: Regression Test `hello`、`help`、`info`、`ls`、`cat` 與 Unknown Command
+- [x] T1.19: 驗證 `load` 進入 Placeholder Loader Mode 後能安全返回 Shell Prompt
+
+---
+
+### Feature1.3: UART Bootloader Integration Roadmap
+
+依照 QEMU-first 順序，逐步完成 Binary Transport、Protocol Parsing、Payload Loading 與 Kernel Jump。
+
+- [ ] T1.20: 建立 QEMU PTY 與最小 Host Raw-byte Sender
+- [ ] T1.21: 驗證 Bootloader Raw UART Receive 不會修改任何 Byte
+- [ ] T1.22: 接收並驗證固定 4-byte Magic；失敗時回到 Shell
+- [ ] T1.23: 解析 Little-endian Size，並在接收 Payload 前驗證 Destination Range
+- [ ] T1.24: 接收恰好 `size` Bytes 至 Target RAM，以 Known Pattern 驗證 Range 與 Content
+- [ ] T1.25: 建立高位址 Payload Build，驗證 ELF Entry、`_start` 與 Section Addresses
+- [ ] T1.26: 執行 `fence.i` 並跳至 Minimal Payload，驗證 Runtime Entry、Hart ID 與 DTB
+- [ ] T1.27: 在 QEMU 驗證 Bootloader → UART Upload → Full Kernel → Kernel Shell
+- [ ] T1.28: 在 OrangePi RV2 驗證 SD Bootloader、`/dev/ttyUSBx` 與 Full Kernel Boot
 
 ---
 

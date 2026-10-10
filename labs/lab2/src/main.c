@@ -86,7 +86,12 @@ void start_kernel(uint64_t hartid, const void *fdt) {
         uart_puts("opi-rv2> ");
         
         to_buffer(buffer, sizeof(buffer));
-        command_parser(buffer, initrd_start, initrd_end);
+
+        enum shell_action Status = command_parser(buffer, initrd_start, initrd_end);
+
+        if (Status == SHELL_ACTION_LOAD) {
+            uart_puts("Load kernel....\n");
+        }
     }
 }
 

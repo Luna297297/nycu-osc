@@ -40,6 +40,7 @@ void cmd_help() {
     uart_puts("  info - print system info.\n");
     uart_puts("  ls - list all files.\n");
     uart_puts("  cat - cat <filename>, find the file.\n");
+    uart_puts("  load - load kernel to distinct memory address.\n");
 }
 
 void cmd_info() {
@@ -53,20 +54,25 @@ void cmd_info() {
     uart_puts("\n");
 }
 
-void command_parser(char buffer[], const void *initrd_start, const void *initrd_end) {
+enum shell_action command_parser(char buffer[], const void *initrd_start, const void *initrd_end) {
     if (strcmp(buffer, "hello") == 0) {
         cmd_hello();
+        return SHELL_ACTION_CONTINUE;
     } else if (strcmp(buffer, "help") == 0) {
         cmd_help();
+        return SHELL_ACTION_CONTINUE;
     } else if (strcmp(buffer, "info") == 0) {
         cmd_info();
+        return SHELL_ACTION_CONTINUE;
     } else if (strcmp(buffer, "ls") == 0) {
         int ret_initrd_list = initrd_list(initrd_start, initrd_end);
         if (ret_initrd_list < 0) {
             uart_puts("Failed to get Initrd list.\n");
         }
+        return SHELL_ACTION_CONTINUE;
     } else if (strcmp(buffer, "cat") == 0) {
         uart_puts("Usage: cat <filename>\n");
+        return SHELL_ACTION_CONTINUE;
     } else if (buffer[0] == 'c' &&
                buffer[1] == 'a' &&
                buffer[2] == 't' &&
@@ -75,7 +81,7 @@ void command_parser(char buffer[], const void *initrd_start, const void *initrd_
         const char *filename = buffer + 4;
         if (filename[0] == '\0') {
             uart_puts("Please enter the filename.\n");
-            return;
+            return SHELL_ACTION_CONTINUE;
         }
         
         int ret_initrd_cat = initrd_cat(initrd_start, initrd_end, filename);
@@ -83,9 +89,13 @@ void command_parser(char buffer[], const void *initrd_start, const void *initrd_
             uart_puts(filename);
             uart_puts(" : Archive Error Or No such file.\n");
         }
+        return SHELL_ACTION_CONTINUE;
+    } else if (strcmp(buffer, "load") == 0) {
+        return SHELL_ACTION_LOAD;
     } else {
         uart_puts("Unknown command: ");
         uart_puts(buffer);
         uart_puts("\nUse help to get commands.\n");
+        return SHELL_ACTION_CONTINUE;
     }
 }
