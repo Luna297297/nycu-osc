@@ -16,6 +16,8 @@ void start_kernel() {
 }
 */
 
+typedef void (*payload_entry_t)(uint64_t hartid, const void *fdt);
+
 void start_kernel(uint64_t hartid, const void *fdt) {
     uintptr_t detected_uart_base = fdt_get_uart_base(fdt);
 
@@ -159,7 +161,7 @@ void start_kernel(uint64_t hartid, const void *fdt) {
             uint32_t read_cnt = 0;
 
             uart_puts("Data first 4 bytes:\n");
-            while (read_cnt < 4) {
+            while (read_cnt < 4 && read_cnt < kernel_size) {
                 uint8_t *read_data = (uint8_t *)read_addr;
                 uint8_t data = *read_data;
 
@@ -169,7 +171,16 @@ void start_kernel(uint64_t hartid, const void *fdt) {
                 read_cnt++;
             }
             uart_puts("\n");
+
+            asm volatile("fence.i" ::: "memory");
+            payload_entry_t payload_entry = (payload_entry_t)des;
+            payload_entry(hartid, fdt);
+
+            uart_puts("Payload returned unexpectedly.\n");
+            while (1) {
+            }
         }
+
     }
 }
 
