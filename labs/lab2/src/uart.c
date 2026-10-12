@@ -41,3 +41,10 @@ void uart_hex(unsigned long h) {
 void uart_init(uintptr_t base) {
     uart_base = base;
 }
+
+uint8_t uart_getc_raw(void) {
+    while ((*UART_LSR & LSR_DR) == 0)
+        ;
+    uint8_t data = (uint8_t)*UART_RBR;
+    return data;
+}

@@ -90,7 +90,58 @@ void start_kernel(uint64_t hartid, const void *fdt) {
         enum shell_action Status = command_parser(buffer, initrd_start, initrd_end);
 
         if (Status == SHELL_ACTION_LOAD) {
-            uart_puts("Load kernel....\n");
+            int magic_idx = 0;
+            uint32_t magic = 0;
+            while (magic_idx < 4) {
+                uint8_t byte = uart_getc_raw();
+
+                magic |= (uint32_t) byte << (magic_idx * 8);
+                magic_idx++;
+            }
+            
+           uint32_t expected_magic = 0x544F4F42;
+
+           if (magic != expected_magic) {
+                uart_puts("Invalid boot magic\n");
+                continue;
+           } else {
+                uart_puts("Boot magic validated.\n");
+           }
+
+           int kernel_size_idx = 0;
+           uint32_t kernel_size = 0;
+           while (kernel_size_idx < 4) {
+                uint8_t byte = uart_getc_raw();
+
+                kernel_size |= (uint32_t) byte << (kernel_size_idx * 8);
+                kernel_size_idx++;
+            }
+            
+            uart_puts("Kernel size: ");
+            uart_hex(kernel_size);
+            uart_puts("\n");
+            
+            uintptr_t des = 0x82000000UL;
+            uintptr_t limit = initrd_start_addr;
+
+            if (kernel_size == 0) {
+                uart_puts("Invalid kernel size.\n");
+                continue;
+            }
+
+            if (des >= limit) {
+                uart_puts("Invalid kernel destination.\n");
+                continue;
+            }
+
+            uintptr_t available = limit - des;
+
+            if ((uintptr_t)kernel_size > available) {
+                uart_puts("Kernel image is too large.\n");
+                continue;
+            }
+
+            uart_puts("Kernel destination range validated.\n");
         }
     }
 }

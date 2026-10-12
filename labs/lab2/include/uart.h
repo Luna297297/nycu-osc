@@ -27,5 +27,5 @@ void uart_putc(char c);
 void uart_puts(const char *s);
 void uart_hex(unsigned long value);
 void uart_init(uintptr_t base);
-
+uint8_t uart_getc_raw(void);
 #endif

@@ -47,8 +47,8 @@
 - [x] T1.23: 建立最小 Host Sender，接收 Serial Device Path 作為輸入
 - [x] T1.24: 以 Binary、Unbuffered 模式開啟 PTY，傳送固定 Known-byte Sequence
 - [x] T1.25: 檢查 Host Sender 的 Write Result，確認完整送出預期 Byte Count
-- [ ] T1.26: 驗證 Host Sender 能透過 PTY 將資料送至 QEMU UART
-- [ ] T1.27: Regression Test 原本的 QEMU Interactive Shell Target
+- [x] T1.26: 驗證 Host Sender 能透過 PTY 將資料送至 QEMU UART
+- [x] T1.27: Regression Test 原本的 QEMU Interactive Shell Target
 
 ---
 
@@ -56,9 +56,9 @@
 
 依照 QEMU-first 順序，逐步完成 Binary Transport、Protocol Parsing、Payload Loading 與 Kernel Jump。
 
-- [ ] T1.28: 驗證 Bootloader Raw UART Receive 不會修改任何 Byte
-- [ ] T1.29: 接收並驗證固定 4-byte Magic；失敗時回到 Shell
-- [ ] T1.30: 解析 Little-endian Size，並在接收 Payload 前驗證 Destination Range
+- [x] T1.28: 驗證 Bootloader Raw UART Receive 不會修改任何 Byte
+- [x] T1.29: 接收並驗證固定 4-byte Magic；失敗時回到 Shell
+- [x] T1.30: 解析 Little-endian Size，並在接收 Payload 前驗證 Destination Range
 - [ ] T1.31: 接收恰好 `size` Bytes 至 Target RAM，以 Known Pattern 驗證 Range 與 Content
 - [ ] T1.32: 建立高位址 Payload Build，驗證 ELF Entry、`_start` 與 Section Addresses
 - [ ] T1.33: 執行 `fence.i` 並跳至 Minimal Payload，驗證 Runtime Entry、Hart ID 與 DTB
