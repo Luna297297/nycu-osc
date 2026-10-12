@@ -62,7 +62,7 @@
 - [x] T1.31: 接收恰好 `size` Bytes 至 Target RAM，以 Known Pattern 驗證 Range 與 Content
 - [x] T1.32: 建立高位址 Payload Build，驗證 ELF Entry、`_start` 與 Section Addresses
 - [x] T1.33: 執行 `fence.i` 並跳至 Minimal Payload，驗證 Runtime Entry、Hart ID 與 DTB
-- [ ] T1.34: 在 QEMU 驗證 Bootloader → UART Upload → Full Kernel → Kernel Shell
+- [x] T1.34: 在 QEMU 驗證 Bootloader → UART Upload → Full Kernel → Kernel Shell
 - [ ] T1.35: 在 OrangePi RV2 驗證 SD Bootloader、`/dev/ttyUSBx` 與 Full Kernel Boot
 
 ---

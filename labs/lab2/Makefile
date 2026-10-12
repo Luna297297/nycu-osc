@@ -14,6 +14,10 @@ PAYLOAD_ELF    := payload.elf
 PAYLOAD_BIN    := payload.bin
 PAYLOAD_LINKER := linker/qemu_payload.ld
 
+HIGH_KERNEL_OBJ := high_kernel_start.o
+HIGH_KERNEL_ELF := high_kernel.elf
+HIGH_KERNEL_BIN := high_kernel.bin
+
 BOARD ?= qemu
 
 ifeq ($(BOARD),qemu)
@@ -38,11 +42,18 @@ payload:
 	$(LD) -T $(PAYLOAD_LINKER) -o $(PAYLOAD_ELF) $(PAYLOAD_OBJ)
 	$(OBJCOPY) -O binary $(PAYLOAD_ELF) $(PAYLOAD_BIN)
 
+high-kernel: build
+	$(LD) -T $(PAYLOAD_LINKER) -o $(HIGH_KERNEL_ELF) *.o
+	$(OBJCOPY) -O binary $(HIGH_KERNEL_ELF) $(HIGH_KERNEL_BIN)
+
 run: build
 	$(QEMU) -M virt -m 256M -kernel $(TARGET) -initrd $(INITRD) -display none -serial stdio
 run-pty: build
 	$(QEMU) -M virt -m 256M -kernel $(TARGET) -initrd $(INITRD) -display none -serial pty
 clean:
-	rm -f $(TARGET) $(ELF) $(PAYLOAD_BIN) $(PAYLOAD_ELF) *.o
+	rm -f $(TARGET) $(ELF) \
+	$(PAYLOAD_BIN) $(PAYLOAD_ELF) \
+	$(HIGH_KERNEL_BIN) $(HIGH_KERNEL_ELF) \
+	*.o
 
-.PHONY: build payload run run-pty clean
+.PHONY: build payload high-kernel run run-pty clean
