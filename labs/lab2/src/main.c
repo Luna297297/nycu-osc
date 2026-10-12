@@ -142,6 +142,33 @@ void start_kernel(uint64_t hartid, const void *fdt) {
             }
 
             uart_puts("Kernel destination range validated.\n");
+
+            // write kernel data
+            uintptr_t write_data = des;
+            uint32_t received = 0;
+
+            while(received < kernel_size) {
+                uint8_t *write_addr = (uint8_t *)write_data;
+                *write_addr = uart_getc_raw();
+
+                write_data++;
+                received++;
+            }
+
+            uintptr_t read_addr = des;
+            uint32_t read_cnt = 0;
+
+            uart_puts("Data first 4 bytes:\n");
+            while (read_cnt < 4) {
+                uint8_t *read_data = (uint8_t *)read_addr;
+                uint8_t data = *read_data;
+
+                uart_hex((unsigned long)data);
+                uart_puts(" ");
+                read_addr++;
+                read_cnt++;
+            }
+            uart_puts("\n");
         }
     }
 }

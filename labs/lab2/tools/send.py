@@ -16,7 +16,8 @@ magic = 0x544F4F42
 pattern = struct.pack("<I", magic)
 
 # get kernel size
-kernel_data = open(kernel_img, "rb").read()
+with open(kernel_img, "rb") as kernel_file:
+    kernel_data = kernel_file.read()
 kernel_size = len(kernel_data)
 kernel_size_byte = struct.pack("<I", len(kernel_data))
 
@@ -41,4 +42,18 @@ with open(serial_port, "wb", buffering=0) as tty:
     if len(kernel_size_byte) != kernel_byte_written:
         print(f"Incomplete kernel size write: expected {len(kernel_size_byte)} bytes, wrote {kernel_byte_written} bytes")
         sys.exit(1)
+
+    total_written = 0
+
+    while total_written < kernel_size:
+        written = tty.write(kernel_data[total_written:])
+
+        if written == 0:
+            print("Failed to write kernel data.")
+            sys.exit(1)
+
+        total_written += written
+    print("Kernel data bytes written: ", total_written)
+
+    print("Kernel first 4 bytes:", kernel_data[:4].hex())
 
