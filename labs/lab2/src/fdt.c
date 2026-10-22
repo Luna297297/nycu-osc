@@ -40,10 +40,28 @@ static inline const void* align_up(const void* ptr, size_t align) {
     return (const void*)(((uintptr_t)ptr + align - 1) & ~(align - 1));
 }
 
+static int parse_address(const void *prop, int len, uintptr_t *value) {
+    if (!prop || !value) return -1;
+    const uint32_t *cells = (const uint32_t *)prop;
+
+    if (len == sizeof(uint32_t)) {
+        *value = bswap32(cells[0]);
+    } else if (len == 2 * sizeof(uint32_t)) {
+        uint32_t high = bswap32(cells[0]);
+        uint32_t low = bswap32(cells[1]);
+        *value = ((uint64_t)high << 32) | low;
+    } else {
+        return -1;
+    }
+
+    return 0;
+}
+
+
 int fdt_path_offset(const void* fdt, const char* path) {
     // Parse DTB header
     const struct fdt_header *header = fdt;
-    
+
     // Validate Magic Number
     uint32_t magic = bswap32(header->magic);
     if (magic != 0xd00dfeed) {
@@ -199,10 +217,10 @@ const void* fdt_getprop(const void* fdt,
 }
 
 uintptr_t fdt_get_uart_base(const void* fdt) {
-    int offset = fdt_path_offset(fdt, "/soc/uart");
+    int offset = fdt_path_offset(fdt, "/soc/serial");
 
     if (offset < 0) {
-        offset = fdt_path_offset(fdt, "/soc/serial");
+        offset = fdt_path_offset(fdt, "/soc/uart");
     }
 
     if (offset < 0) return 0; // UART node not found
@@ -231,17 +249,16 @@ int fdt_get_initrd_range(const void *fdt,
 
     int start_len = 0;
     const void *start_prop = fdt_getprop(fdt, offset, "linux,initrd-start", &start_len);
-    if (!start_prop) return -1; // Missing "linux,initrd-start" property
-    if (start_len != sizeof(uint32_t)) return -1; // Unexpected linux,initrd-start format
 
     int end_len = 0;
     const void *end_prop = fdt_getprop(fdt, offset, "linux,initrd-end", &end_len);
-    if (!end_prop) return -1; // Missing "linux,initrd-end" property
-    if (end_len != sizeof(uint32_t)) return -1; // Unexpected linux,initrd-end format
 
-    uintptr_t parsed_start = (uintptr_t)bswap32(*(const uint32_t *)start_prop);
-    uintptr_t parsed_end = (uintptr_t)bswap32(*(const uint32_t *)end_prop);
-    
+    uintptr_t parsed_start;
+    if (parse_address(start_prop, start_len, &parsed_start) < 0) return -1;
+
+    uintptr_t parsed_end;
+    if (parse_address(end_prop, end_len, &parsed_end) < 0) return -1;
+
     if (parsed_start >= parsed_end) return -1; // End addr should be greater than start addr
 
     *start = parsed_start;

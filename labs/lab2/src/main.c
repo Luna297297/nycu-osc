@@ -60,6 +60,11 @@ void start_kernel(uint64_t hartid, const void *fdt) {
         }
     }
 
+    uintptr_t load_limit = (uintptr_t)fdt;
+    if (initrd_start_addr < load_limit) {
+        load_limit = initrd_start_addr;
+    }
+
     const void *initrd_start = (const void *)initrd_start_addr;
     const void *initrd_end = (const void *)initrd_end_addr;
 
@@ -79,7 +84,7 @@ void start_kernel(uint64_t hartid, const void *fdt) {
         enum shell_action Status = command_parser(buffer, initrd_start, initrd_end);
 
         if (Status == SHELL_ACTION_LOAD) {
-            bootloader_load(hartid, fdt, 0x82000000UL, initrd_start_addr);
+            bootloader_load(hartid, fdt, KERNEL_LOAD_ADDR, load_limit);
         }
     }
 }

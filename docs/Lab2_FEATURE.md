@@ -63,7 +63,8 @@
 - [x] T1.32: 建立高位址 Payload Build，驗證 ELF Entry、`_start` 與 Section Addresses
 - [x] T1.33: 執行 `fence.i` 並跳至 Minimal Payload，驗證 Runtime Entry、Hart ID 與 DTB
 - [x] T1.34: 在 QEMU 驗證 Bootloader → UART Upload → Full Kernel → Kernel Shell
-- [ ] T1.35: 在 OrangePi RV2 驗證 SD Bootloader、`/dev/ttyUSBx` 與 Full Kernel Boot
+
+OrangePi 實體板驗證統一集中在 **Feature5: OrangePi RV2 Platform Integration**。
 
 ---
 
@@ -205,14 +206,7 @@ OrangePi RV2 UART
 - [x] T4.19: 移除 Hardcoded `UART_BASE` 與 Fallback；查詢失敗時停止 Kernel
 - [x] T4.20: 驗證 QEMU 從 Boot 到互動式 Shell 均只依賴 Runtime DTB UART Base
 
-#### OrangePi Follow-up
-
-此段延後至 QEMU 的 CPIO `ls` / `cat` 完成，再與下方 OrangePi Initrd Checkpoint 一起驗證。
-
-- [ ] T4.21: 查詢並驗證 QEMU 與 OrangePi UART Node 的 `compatible` 及 Register Layout 資訊
-- [ ] T4.22: 評估並確定 UART Register Layout 採用 Runtime `compatible` Selection 或既有 Build Configuration
-- [ ] T4.23: 將 OrangePi Register Offset 與 Access Width 接入 UART Driver
-- [ ] T4.24: 驗證 OrangePi 從 Boot 到互動式 Shell 均使用 Runtime DTB UART Configuration
+OrangePi UART Node、Register Layout 與 Runtime Console 驗證統一集中在 **Feature5**。
 
 ---
 
@@ -248,50 +242,84 @@ Shell ls / cat
 
 #### QEMU Initrd Loading and Address Discovery
 
-- [x] T4.25: 準備最小的 New ASCII CPIO Archive 作為 QEMU 測試資料
-- [x] T4.26: 讓 QEMU Run Command 使用 `-initrd` 載入 Archive
-- [x] T4.27: 檢查 QEMU DTB `/chosen` 中的 `linux,initrd-start` 與 `linux,initrd-end`
-- [x] T4.28: 設計取得 Initrd `[start, end)` 的 FDT Integration API
-- [x] T4.29: 查詢並解析兩個 Initrd Properties，驗證 Property Length 與 Address Encoding
-- [x] T4.30: 在 Kernel 印出並驗證 Initrd Start、End 與 Size，再進入 Shell
+- [x] T4.21: 準備最小的 New ASCII CPIO Archive 作為 QEMU 測試資料
+- [x] T4.22: 讓 QEMU Run Command 使用 `-initrd` 載入 Archive
+- [x] T4.23: 檢查 QEMU DTB `/chosen` 中的 `linux,initrd-start` 與 `linux,initrd-end`
+- [x] T4.24: 設計取得 Initrd `[start, end)` 的 FDT Integration API
+- [x] T4.25: 查詢並解析兩個 Initrd Properties，驗證 Property Length 與 Address Encoding
+- [x] T4.26: 在 Kernel 印出並驗證 Initrd Start、End 與 Size，再進入 Shell
 
 #### Bounded CPIO Parser Integration
 
-- [x] T4.31: 從既有 Exercise 重用 CPIO Parser Core，分離 Host Test Harness
-- [x] T4.32: 建立接受 `[start, end)` 的 Bounded `initrd_list()` Traversal Interface
-- [x] T4.33: 驗證 Header、Filename、File Data 與兩次 4-byte Alignment 均未超出 End Boundary
-- [x] T4.34: 在 Kernel 中驗證 Archive 能遍歷至 `TRAILER!!!`
+- [x] T4.27: 從既有 Exercise 重用 CPIO Parser Core，分離 Host Test Harness
+- [x] T4.28: 建立接受 `[start, end)` 的 Bounded `initrd_list()` Traversal Interface
+- [x] T4.29: 驗證 Header、Filename、File Data 與兩次 4-byte Alignment 均未超出 End Boundary
+- [x] T4.30: 在 Kernel 中驗證 Archive 能遍歷至 `TRAILER!!!`
 
 #### Shell Integration
 
-**Current Milestone:** 下一個小步驟是完成 bounded `initrd_cat()`；先直接重用已驗證的 `initrd_list()` record traversal，確認能精確輸出 `file_len` bytes，再接入 Shell。Parser traversal 的共用抽象延後到兩者都能運作後再評估。
+QEMU 的 `ls`、`cat` 與動態 Initrd Range 已完成整合；剩餘工作是補齊 Archive Edge Cases，並在 OrangePi FIT Image 上驗證相同資料流。
 
-- [ ] T4.35: 將 `ls` Command 接到 CPIO Listing Interface
-- [ ] T4.36: 將 `cat <filename>` Command 接到 CPIO Lookup Interface，輸出實際 File Data
-- [ ] T4.37: 驗證檔案存在、不存在、空檔案與非 NUL-terminated File Data
-- [ ] T4.38: 驗證 QEMU 從 DTB Discovery 到 `ls` / `cat` 全程不使用 Hardcoded Initrd Address
+- [x] T4.31: 將 `ls` Command 接到 CPIO Listing Interface
+- [x] T4.32: 將 `cat <filename>` Command 接到 CPIO Lookup Interface，輸出實際 File Data
+- [ ] T4.33: 驗證檔案存在、不存在、空檔案與非 NUL-terminated File Data
+- [x] T4.34: 驗證 QEMU 從 DTB Discovery 到 `ls` / `cat` 全程不使用 Hardcoded Initrd Address
 
-#### OrangePi Integration Checkpoint
-
-QEMU 的 `ls` / `cat` 完成後，先將 Basic Exercise 2 與 3 帶到 OrangePi 驗證，再開始 UART Bootloader。這是平台整合 checkpoint，不在此階段重新設計已通過驗證的 Parser。
-
-- [ ] T4.39: 在 `kernel.its` 加入 Ramdisk Image 與 Configuration Reference
-- [ ] T4.40: 驗證 OrangePi DTB `/chosen` 提供正確的 Initrd `[start, end)`
-- [ ] T4.41: 驗證 OrangePi Runtime UART、`ls` 與 `cat`
-- [ ] T4.42: 移除僅供整合驗證使用的 Boot-time Archive Listing
+OrangePi FIT、Initrd 與 Shell 驗證統一集中在 **Feature5**。
 
 ---
 
-## Feature5: Bootloader Self-Relocation (Advanced Exercise)
+## Feature5: OrangePi RV2 Platform Integration
+
+將已在 QEMU 驗證的 Device Tree、Initrd 與 UART Bootloader 整合至實體板。執行順序固定為 **Platform Baseline → Memory Layout → High-kernel Build → Physical UART → End-to-end Boot**，避免同時懷疑多個平台差異。
+
+### Feature5.1: Platform Artifacts and FIT Baseline
+
+- [x] T5.1: 盤點 `kernel.bin`、OrangePi DTB、Initramfs、`kernel.its` 與 `mkimage`
+- [x] T5.2: 檢查 OrangePi DTB 的 UART `compatible`、`reg`、Memory Node 與 `/chosen`
+- [x] T5.3: 確認 OrangePi UART Register Offset 與 Access Width 符合現有 Driver Configuration
+- [x] T5.4: 在 `kernel.its` 加入 Ramdisk Image 與 Configuration Reference
+- [x] T5.5: 使用 `mkimage` 建立包含 Kernel、DTB 與 Ramdisk 的 FIT Image
+- [x] T5.6: 從 FIT / U-Boot Log 驗證 Kernel、DTB 與 Initrd Load Address
+- [x] T5.7: 從 SD/FIT 啟動 `0x00200000` Kernel，驗證 Runtime UART、DTB、Initrd、`ls` 與 `cat`
+
+### Feature5.2: OrangePi Memory and High-kernel Build
+
+- [x] T5.8: 畫出 Bootloader、Loaded Kernel、DTB、Initrd 與 RAM End 的實際 Memory Map
+- [x] T5.9: 驗證 Loaded Kernel Range 不與 Bootloader、DTB 或 Initrd 重疊
+- [x] T5.10: 建立 Link Address `0x20000000` 的 OrangePi High-kernel Linker Script
+- [x] T5.11: 讓 High-kernel Build 依 `BOARD` 選擇 QEMU / OrangePi Link Address
+- [x] T5.12: 將 Loader Destination 從 QEMU Constant 改為 Board Memory Policy
+- [x] T5.13: 驗證 OrangePi High-kernel ELF Entry、`_start`、VMA 與 LMA
+
+### Feature5.3: Physical UART Transport
+
+- [x] T5.14: 確認 `/dev/ttyUSBx`、存取權限、Baud Rate 與 Raw Serial Mode
+- [x] T5.15: 以 Known-byte Pattern 驗證 Host → OrangePi Raw UART Transport
+- [x] T5.16: 在 OrangePi 驗證 Magic、Size、Invalid Magic、Zero Size 與 Oversized Image
+
+### Feature5.4: End-to-end Boot and Regression
+
+- [x] T5.17: 經 UART 將 Full Kernel 載入 `0x20000000` 並執行 `fence.i` / Jump
+- [x] T5.18: 驗證 Loaded Kernel 收到正確 Hart ID 與 DTB Pointer
+- [x] T5.19: 驗證第二個 Kernel Banner、Runtime UART、Initrd、`ls` 與 `cat`
+- [x] T5.20: 重新驗證 QEMU PTY Upload 與 Full Kernel Shell
+- [x] T5.21: 移除僅供整合驗證使用的 Boot-time Debug Output
+
+**Milestone:** OrangePi RV2 已完成 SD/FIT Baseline Boot、Runtime UART / DTB / Initrd Integration、Raw UART Upload，並成功將 Full Kernel 載入 `0x20000000` 執行；QEMU PTY Regression 亦通過。
+
+---
+
+## Feature6: Bootloader Self-Relocation (Advanced Exercise)
 
 讓 Bootloader 搬移自己，釋放標準 Kernel Entry Address，之後 UART 收到的 Kernel 即可載入標準位置。
 
 > **最後實作。** 本功能依賴已可運作的 UART Bootloader，也必須避開 DTB 與 Initrd，因此不與 Basic Exercise 1 同時開發。
 
-- [ ] T5.1: 畫出 Bootloader、Kernel、DTB、Initrd 與可用 RAM 的 Memory Map
-- [ ] T5.2: 根據可用記憶體選擇 Relocation Destination
-- [ ] T5.3: 調整 Linker / Relocation Design，確認搬移後仍能正確執行
-- [ ] T5.4: 搬移 Bootloader 並跳轉至 Relocated Entry
-- [ ] T5.5: 將新 Kernel 載入標準 Entry Address
-- [ ] T5.6: 驗證 Relocation Range 不與 DTB 或 Initrd 重疊
-- [ ] T5.7: 在 QEMU 完整驗證，再進行 OrangePi 驗證
+- [ ] T6.1: 畫出 Bootloader、Kernel、DTB、Initrd 與可用 RAM 的 Memory Map
+- [ ] T6.2: 根據可用記憶體選擇 Relocation Destination
+- [ ] T6.3: 調整 Linker / Relocation Design，確認搬移後仍能正確執行
+- [ ] T6.4: 搬移 Bootloader 並跳轉至 Relocated Entry
+- [ ] T6.5: 將新 Kernel 載入標準 Entry Address
+- [ ] T6.6: 驗證 Relocation Range 不與 DTB 或 Initrd 重疊
+- [ ] T6.7: 在 QEMU 完整驗證，再進行 OrangePi 驗證

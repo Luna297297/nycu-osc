@@ -22,9 +22,11 @@ BOARD ?= qemu
 
 ifeq ($(BOARD),qemu)
 LINKER := linker/qemu.ld
+HIGH_KERNEL_LINKER := linker/qemu_payload.ld
 BOARD_CFLAGS := -DCONFIG_BOARD_QEMU
 else ifeq ($(BOARD),orangepi)
 LINKER := linker/orangepi.ld
+HIGH_KERNEL_LINKER := linker/orangepi_payload.ld
 BOARD_CFLAGS := -DCONFIG_BOARD_ORANGEPI
 else
 $(error Unknown BOARD: $(BOARD))
@@ -43,7 +45,7 @@ payload:
 	$(OBJCOPY) -O binary $(PAYLOAD_ELF) $(PAYLOAD_BIN)
 
 high-kernel: build
-	$(LD) -T $(PAYLOAD_LINKER) -o $(HIGH_KERNEL_ELF) *.o
+	$(LD) -T $(HIGH_KERNEL_LINKER) -o $(HIGH_KERNEL_ELF) *.o
 	$(OBJCOPY) -O binary $(HIGH_KERNEL_ELF) $(HIGH_KERNEL_BIN)
 
 run: build
