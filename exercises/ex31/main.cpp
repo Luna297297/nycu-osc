@@ -13,8 +13,13 @@ struct page {
 std::vector<page> mem_map;
 std::vector<std::list<page*>> free_area;
 
-struct page* get_buddy(struct page* page, unsigned int order) {
-    return &mem_map[(page - mem_map.data()) ^ (1 << order)];
+struct page* get_buddy(struct page* block, unsigned int order) {
+    size_t idx = block - mem_map.data();
+    size_t buddy_idx = idx * (1UL << order);
+
+    if (buddy_idx >= mem_map.size()) return nullptr;
+
+    return &mem_map[buddy_idx];
 }
 
 struct page* alloc_pages(unsigned int order) {
@@ -46,39 +51,33 @@ struct page* alloc_pages(unsigned int order) {
     return block;
 }
 
-void free_pages(struct page* page) {
+void free_pages(struct page* block) {
+    block->refcount = 0;
+    int order = block->order;
 
-    struct page* curr_block = page;
-    curr_block->refcount = 0;
-    unsigned int curr_order = curr_block->order;
-
-    while (curr_order < MAX_ORDER) {
-        struct page* buddy = get_buddy(curr_block, curr_order);
+    while (order < MAX_ORDER) {
+        struct page* buddy = get_buddy(block, order);
         
-        if (buddy->refcount != 0) break;
-        if ((unsigned int)buddy->order != curr_order) break;
+        if (buddy == nullptr) break;
+        if (buddy->refcount != 0 || buddy->order != order) break;
 
-        free_area[curr_order].remove(buddy);
 
-        unsigned int curr_block_idx = curr_block - mem_map.data();
-        unsigned int buddy_idx = buddy - mem_map.data();
-        
-        curr_order++;
+        free_area[order].remove(buddy);
 
-        if (curr_block_idx < buddy_idx) {
-            curr_block->order = curr_order;
-            curr_block->refcount = 0;
-            buddy->order = -1; 
-        } else {
-            buddy->order = curr_order;
-            buddy->refcount = 0;
-            curr_block->order = -1; 
-
-            curr_block = buddy; 
+        if (buddy < block) {
+            struct page* temp = block;
+            block = buddy;
+            buddy = temp;
         }
+
+        buddy->order = -1;
+        
+        order++;
+        block->order = order;
+        block->refcount = 0;
     }
 
-    free_area[curr_order].push_back(curr_block);
+    free_area[order].push_back(block);
 }
 
 void dump() {
