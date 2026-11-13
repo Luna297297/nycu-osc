@@ -6,8 +6,8 @@
 #define MAX_ORDER 10
 
 struct page {
-    int order = 0; //order of located block 
-    int refcount = 0; //the block is allocated or not
+    int order = -1; //order of located block 
+    int refcount = 0; //0: waiting for allocated, 1: allocated
 };
 
 std::vector<page> mem_map;
@@ -20,40 +20,65 @@ struct page* get_buddy(struct page* page, unsigned int order) {
 struct page* alloc_pages(unsigned int order) {
     if (order > MAX_ORDER) return nullptr;
 
-    if (!free_area[order].empty()) {
-        page* to_be_allocated = free_area[order].front();
-        free_area[order].pop_front();
-        to_be_allocated->refcount = 1;
+    unsigned int current_order = order;
 
-        return to_be_allocated;
+    while (current_order <= MAX_ORDER && free_area[current_order].empty()) {
+        current_order++;
     }
 
-    for (unsigned int i = order + 1; i <= MAX_ORDER; i++) {
-        if (!free_area[i].empty()) {
-            page* to_be_allocated = free_area[i].front();
-            free_area[i].pop_front();
-            while (i > order) {
-                unsigned int index_of_buddy = (to_be_allocated - mem_map.data()) + (1 << (i - 1));
-                
-                // update the info of buddy
-                mem_map[index_of_buddy].order = i - 1;
-                mem_map[index_of_buddy].refcount = 0;
-                
-                free_area[i - 1].push_back(&mem_map[index_of_buddy]);
-                i--;
-            
-            }
-            to_be_allocated->order = order;
-            to_be_allocated->refcount = 1;
+    if (current_order > MAX_ORDER) return nullptr;
 
-            return to_be_allocated;
-        }
+    struct page* block = free_area[current_order].front();
+    free_area[current_order].pop_front();
+
+    while (current_order > order) {
+        current_order--;
+
+        struct page* buddy = get_buddy(block, current_order);
+        buddy->order = current_order;
+        buddy->refcount = 0;
+
+        free_area[current_order].push_back(buddy);
     }
-    return nullptr;
+    block->order = order;
+    block->refcount = 1;
+
+    return block;
 }
 
 void free_pages(struct page* page) {
-    // TODO: Implement this function
+
+    struct page* curr_block = page;
+    curr_block->refcount = 0;
+    unsigned int curr_order = curr_block->order;
+
+    while (curr_order < MAX_ORDER) {
+        struct page* buddy = get_buddy(curr_block, curr_order);
+        
+        if (buddy->refcount != 0) break;
+        if ((unsigned int)buddy->order != curr_order) break;
+
+        free_area[curr_order].remove(buddy);
+
+        unsigned int curr_block_idx = curr_block - mem_map.data();
+        unsigned int buddy_idx = buddy - mem_map.data();
+        
+        curr_order++;
+
+        if (curr_block_idx < buddy_idx) {
+            curr_block->order = curr_order;
+            curr_block->refcount = 0;
+            buddy->order = -1; 
+        } else {
+            buddy->order = curr_order;
+            buddy->refcount = 0;
+            curr_block->order = -1; 
+
+            curr_block = buddy; 
+        }
+    }
+
+    free_area[curr_order].push_back(curr_block);
 }
 
 void dump() {
