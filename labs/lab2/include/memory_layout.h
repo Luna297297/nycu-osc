@@ -1,0 +1,19 @@
+#ifndef MEMORY_LAYOUT_H
+#define MEMORY_LAYOUT_H
+
+#if defined(CONFIG_BOARD_QEMU)
+
+#define STANDARD_KERNEL_LOAD_ADDR    0x80200000
+#define BOOTLOADER_RELOCATION_ADDR   0x82000000
+
+#elif defined(CONFIG_BOARD_ORANGEPI)
+
+#define STANDARD_KERNEL_LOAD_ADDR    0x00200000
+#define BOOTLOADER_RELOCATION_ADDR   0x20000000
+
+#else
+#error "Unsupported board"
+#endif
+
+
+#endif
