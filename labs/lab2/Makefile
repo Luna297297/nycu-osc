@@ -56,7 +56,7 @@ high-kernel: build
 
 self-relocating-bootloader:
 	rm -f *.o
-	$(CC) $(CFLAGS) -c $(COMMON_C_SRCS)
+	$(CC) $(CFLAGS) -DCONFIG_SELF_RELOCATE -c $(COMMON_C_SRCS)
 	$(CC) $(CFLAGS) -DCONFIG_SELF_RELOCATE \
 		-c src/start.S -o $(BOOTLOADER_START_OBJ)
 	$(LD) -T $(LINKER) -o $(BOOTLOADER_ELF) \

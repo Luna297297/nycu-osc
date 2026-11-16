@@ -65,6 +65,12 @@ void start_kernel(uint64_t hartid, const void *fdt) {
         load_limit = initrd_start_addr;
     }
 
+#ifdef CONFIG_SELF_RELOCATE
+    if (BOOTLOADER_RELOCATION_ADDR < load_limit) {
+        load_limit = BOOTLOADER_RELOCATION_ADDR;
+    }
+#endif
+
     const void *initrd_start = (const void *)initrd_start_addr;
     const void *initrd_end = (const void *)initrd_end_addr;
 
