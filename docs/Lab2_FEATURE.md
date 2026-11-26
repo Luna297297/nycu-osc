@@ -354,39 +354,74 @@ Uploaded Kernel _start
 明確區分需要複製的 Loadable Image，以及跳轉後才初始化的 BSS 與 Stack。
 
 - [x] T6.11: 在 Linker Script 定義 Image Start、Loadable Image End、BSS Start / End 與 Runtime End Symbols
-- [ ] T6.12: QEMU 使用 `0x82000000`、OrangePi 使用 `0x20000000` 作為初始 Relocation Destination Policy
-- [ ] T6.13: 畫出 Standard Bootloader、Relocated Runtime Footprint、Standard Kernel、DTB、Initrd 與 RAM Boundary
-- [ ] T6.14: 驗證 Relocation Destination 與完整 Runtime Footprint 不和其他 Live Range 重疊
+- [x] T6.12: QEMU 使用 `0x82000000`、OrangePi 使用 `0x20000000` 作為初始 Relocation Destination Policy
+- [x] T6.13: 畫出 Standard Bootloader、Relocated Runtime Footprint、Standard Kernel、DTB、Initrd 與 RAM Boundary
+- [x] T6.14: 驗證 Relocation Destination 與完整 Runtime Footprint 不和其他 Live Range 重疊
 
 ### Feature6.4: Minimal Early Self-Relocation
 
 先只證明 Bootloader 能在建立 C Runtime 前搬移並於 High Address 執行，不接收 Uploaded Kernel。
 
-- [ ] T6.15: 在 `_start` 早期逐 Byte 或逐 Word 複製 Loadable Image 至 Relocation Destination
-- [ ] T6.16: Copy 完成後執行 `fence.i`
-- [ ] T6.17: 計算並跳至 Relocated Image 內的 `post_relocation`
-- [ ] T6.18: 以 Runtime Address 或最小 UART Marker 證明 CPU 已在 High Address 執行
+- [x] T6.15: 在 `_start` 早期逐 Byte 或逐 Word 複製 Loadable Image 至 Relocation Destination
+- [x] T6.16: Copy 完成後執行 `fence.i`
+- [x] T6.17: 計算並跳至 Relocated Image 內的 `post_relocation`
+- [x] T6.18: 以 Runtime Address 或最小 UART Marker 證明 CPU 已在 High Address 執行
 
 ### Feature6.5: Restore the Relocated Bootloader Runtime
 
-- [ ] T6.19: 在 Relocated `post_relocation` 清除 Relocated BSS
-- [ ] T6.20: 將 Stack Pointer 初始化至 Relocated Runtime Region
-- [ ] T6.21: 保留 Hart ID（`a0`）與 Runtime DTB Address（`a1`），再進入 `start_kernel()`
-- [ ] T6.22: 驗證 Relocated Bootloader 的 UART、FDT、Initrd 與 Shell 正常運作
-- [ ] T6.23: Regression Test `hello`、`info`、`ls`、`cat`、Invalid Magic 與 Invalid Size
+- [x] T6.19: 在 Relocated `post_relocation` 清除 Relocated BSS
+- [x] T6.20: 將 Stack Pointer 初始化至 Relocated Runtime Region
+- [x] T6.21: 保留 Hart ID（`a0`）與 Runtime DTB Address（`a1`），再進入 `start_kernel()`
+- [x] T6.22: 驗證 Relocated Bootloader 的 UART、FDT、Initrd 與 Shell 正常運作
+- [x] T6.23: Regression Test `hello`、`info`、`ls`、`cat`、Invalid Magic 與 Invalid Size
 
 ### Feature6.6: Load the Uploaded Kernel at the Standard Address
 
-- [ ] T6.24: 將 QEMU Kernel Destination 改回 `0x80200000`，OrangePi 改回 `0x00200000`
-- [ ] T6.25: 以 Relocated Bootloader、DTB 與 Initrd 的最低 Live Address 計算 Standard Kernel Load Limit
-- [ ] T6.26: 驗證 Uploaded Kernel Size 與 Half-open Destination Range 後接收完整 Payload
-- [ ] T6.27: 執行 `fence.i`，以 Hart ID 與 DTB Address 跳至 Standard-address Uploaded Kernel
-- [ ] T6.28: 驗證 Uploaded Kernel 不執行 Self-relocation，並能進入自己的 `_start`、BSS、Stack 與 Shell
+- [x] T6.24: 將 QEMU Kernel Destination 改回 `0x80200000`，OrangePi 改回 `0x00200000`
+- [x] T6.25: 以 Relocated Bootloader、DTB 與 Initrd 的最低 Live Address 計算 Standard Kernel Load Limit
+- [x] T6.26: 驗證 Uploaded Kernel Size 與 Half-open Destination Range 後接收完整 Payload
+- [x] T6.27: 執行 `fence.i`，以 Hart ID 與 DTB Address 跳至 Standard-address Uploaded Kernel
+- [x] T6.28: 驗證 Uploaded Kernel 不執行 Self-relocation，並能進入自己的 `_start`、BSS、Stack 與 Shell
 
-### Feature6.7: End-to-end Platform Verification
+### Feature6.7: QEMU End-to-end Verification
 
-- [ ] T6.29: 在 QEMU 驗證 Standard Bootloader → Self-relocation → UART Upload → Standard Kernel → Kernel Shell
-- [ ] T6.30: 在 QEMU 重新驗證 Uploaded Kernel 的 Runtime UART、DTB、Initrd、`ls` 與 `cat`
-- [ ] T6.31: 在 OrangePi 驗證 Relocation Memory Layout 與 FIT / Runtime DTB / Initrd Addresses
-- [ ] T6.32: 在 OrangePi 驗證 Standard Bootloader → Self-relocation → UART Upload → Standard Kernel → Kernel Shell
-- [ ] T6.33: 完成 QEMU 與 OrangePi Regression，移除僅供 Relocation 驗證使用的 Debug Output
+- [x] T6.29: 在 QEMU 驗證 Standard Bootloader → Self-relocation → UART Upload → Standard Kernel → Kernel Shell
+- [x] T6.30: 在 QEMU 重新驗證 Uploaded Kernel 的 Runtime UART、DTB、Initrd、`ls` 與 `cat`
+
+**Milestone:** QEMU 已完成 Resident Bootloader `0x80200000` → Relocated Bootloader `0x82000000` → Uploaded Kernel `0x80200000` 的完整流程。
+
+### Feature6.8: OrangePi Build Artifacts and FIT Integration
+
+先建立並驗證兩種 OrangePi Image Role，再修改 SD/FIT，避免混淆 Resident Bootloader 與 UART Uploaded Kernel。
+
+- [x] T6.31: 建立 OrangePi `bootloader.bin` 與 `kernel.bin`
+- [x] T6.32: 驗證兩個 ELF Entry Point 皆為 `0x00200000`，並確認 Bootloader Relocation Destination 為 `0x20000000`
+- [x] T6.33: 將 FIT Kernel Subimage 改為 `bootloader.bin`，並保持 Load / Entry Address 為 `0x00200000`
+- [x] T6.34: 使用 `mkimage` 產生新 FIT，檢查 Kernel、DTB、Initrd 與 Configuration Metadata
+- [x] T6.35: 將新 FIT 寫入 SD Card，保留 `kernel.bin` 作為 Host UART Payload
+
+### Feature6.9: OrangePi Relocation Runtime Verification
+
+- [x] T6.36: 從 U-Boot Log 驗證 Resident Bootloader、Runtime DTB 與 Initrd 的實際 Load Address
+- [x] T6.37: 驗證 `[0x20000000, 0x20000000 + runtime footprint)` 不與 FIT、Runtime DTB 或 Initrd 重疊
+- [x] T6.38: 以 Temporary Runtime Address Output 證明 Resident Bootloader 已在 `0x20000000` Range 執行
+- [x] T6.39: 驗證 Relocated Bootloader 的 Hart ID、DTB、UART、Initrd 與 Shell Context 正常
+- [x] T6.40: 在 Relocated Bootloader 執行 `hello`、`info`、`ls` 與 `cat` Regression
+
+### Feature6.10: OrangePi Standard-address Kernel Upload
+
+- [x] T6.41: 確認 Kernel Destination 為 `0x00200000`，Load Limit 為最低 Live Address `0x20000000`
+- [x] T6.42: 重新驗證 Invalid Magic、Zero Size 與 Oversized Image 不會破壞 Relocated Bootloader
+- [x] T6.43: 透過 `/dev/ttyUSBx` 將 `kernel.bin` 寫入 Standard Kernel Address
+- [x] T6.44: 驗證 Uploaded Kernel Runtime Address 位於 `0x00200000` Range，且未再次進入 Self-relocation Path
+- [x] T6.45: 驗證 Uploaded Kernel 收到正確 Hart ID 與 DTB Pointer，並成功進入自己的 Shell
+
+### Feature6.11: Final Cross-platform Regression and Cleanup
+
+- [x] T6.46: 在 Uploaded Kernel 執行 `hello`、`info`、`ls` 與 `cat` Regression
+- [x] T6.47: 移除 Temporary Runtime Address Output，重建最終 OrangePi FIT
+- [x] T6.48: 重新執行 QEMU 與 OrangePi End-to-end Regression
+- [x] T6.49: 更新 Lab2 Checklist、Technical Documentation 與 Known Limitations
+- [x] T6.50: Commit 並 Push 最終 Advanced Exercise Integration
+
+**Milestone:** QEMU 與 OrangePi 均由 Resident Bootloader 自我搬移至 High-memory Region，再透過 UART 將 Uploaded Kernel 載入標準 Entry Address 並完成 Kernel Shell Regression。

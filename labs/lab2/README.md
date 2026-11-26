@@ -1,68 +1,73 @@
 # NYCU OSC Lab2 — Booting
 
-In Lab 2, I added three features to my freestanding RISC-V S-mode kernel:
+In Lab 2, I added four features to my freestanding RISC-V S-mode kernel:
 
 1. Use the devicetree to find the UART and initial ramdisk.
 2. Read files from a New ASCII CPIO archive.
 3. Load another kernel over UART.
+4. Relocate the resident bootloader before loading the new kernel.
 
 ## Architecture Overview
 
 ```text
 QEMU OpenSBI / OrangePi OpenSBI + U-Boot
                        │
-                       │ loads the resident kernel
+                       │ load at the standard address
                        │ a0 = hart ID, a1 = DTB address
                        ▼
-              Resident Loader Kernel
-                       │
-                       ├── discover the UART through FDT
-                       ├── locate the initrd through /chosen
-                       ├── provide ls/cat through the CPIO parser
-                       └── run the interactive shell
-                                    │
-                                    │ load command
-                                    ▼
-                         UART Bootloader
-                                    │
-                         receive magic + size + payload
-                                    │
-                         write to a high memory address
-                                    │
-                                  fence.i
-                                    │
-                                    ▼
-                    Uploaded High-Address Kernel
+               Resident Bootloader
+                       │ copy text, rodata, and data
+                       │ fence.i
+                       ▼
+              High-address Bootloader
+                       │ clear BSS and set a new stack
+                       │ initialize FDT, UART, and initrd
+                       │ run the shell
+                       ▼
+                  load command
+                       │ receive magic + size + payload
+                       │ write to the standard address
+                       │ fence.i
+                       ▼
+                 Uploaded Kernel
                        └── restart from its own _start
 ```
 
-Both kernels are built from the same source code, but they have different roles:
+Both images are built from the same source code, but they have different roles:
 
-- The resident kernel provides a stable UART loading environment.
+- The resident bootloader provides a stable UART loading environment.
 - The uploaded kernel contains a newly built version under test.
 
 ## Supported Platforms
 
-| Platform | Resident Kernel | Uploaded Kernel | UART Transport | Verified Features |
-|---|---:|---:|---|---|
-| QEMU virt | `0x80200000` | `0x82000000` | QEMU PTY (`/dev/pts/N`) | FDT, initrd/CPIO, shell, UART upload |
-| OrangePi RV2 | `0x00200000` | `0x20000000` | Physical serial device | FDT, FIT ramdisk/CPIO, shell, UART upload |
+| Platform | Standard Address | Relocated Bootloader | Uploaded Kernel | UART Transport |
+|---|---:|---:|---:|---|
+| QEMU virt | `0x80200000` | `0x82000000` | `0x80200000` | QEMU PTY (`/dev/pts/N`) |
+| OrangePi RV2 | `0x00200000` | `0x20000000` | `0x00200000` | `/dev/ttyUSBx` |
 
 ## Build and Run
 
 ### QEMU
 
 ```bash
-make BOARD=qemu run
-make BOARD=qemu run-pty
-make BOARD=qemu high-kernel
+make self-relocating-bootloader BOARD=qemu
+make uploaded-kernel BOARD=qemu
+
+qemu-system-riscv64 \
+    -M virt \
+    -m 256M \
+    -kernel bootloader.bin \
+    -initrd ../../exercises/ex22/initramfs.cpio \
+    -display none \
+    -serial pty
 ```
 
 ### OrangePi RV2
 
 ```bash
-make BOARD=orangepi
-cp kernel.bin board/kernel.bin
+make self-relocating-bootloader BOARD=orangepi
+make uploaded-kernel BOARD=orangepi
+cp bootloader.bin board/bootloader.bin
 
 (
     cd board
@@ -71,8 +76,6 @@ cp kernel.bin board/kernel.bin
 
 cp board/kernel.itb /path/to/mounted/boot/kernel.fit
 sync
-
-make BOARD=orangepi high-kernel
 ```
 
 ## UART Bootloader Demo
@@ -91,7 +94,13 @@ Use the `/dev/pts/N` path printed by QEMU in the following commands.
 ### Terminal 1: Start QEMU
 
 ```bash
-make BOARD=qemu run-pty
+qemu-system-riscv64 \
+    -M virt \
+    -m 256M \
+    -kernel bootloader.bin \
+    -initrd ../../exercises/ex22/initramfs.cpio \
+    -display none \
+    -serial pty
 ```
 
 ### Terminal 2: Read Kernel Output
@@ -103,9 +112,8 @@ cat /dev/pts/N
 ### Terminal 3: Upload the Kernel
 
 ```bash
-make BOARD=qemu high-kernel
 printf 'load\n' > /dev/pts/N
-python3 tools/send.py /dev/pts/N high_kernel.bin
+python3 tools/send.py /dev/pts/N kernel.bin
 ```
 
 Expected output:
@@ -121,5 +129,5 @@ opi-rv2>
 
 ## Known Limitations
 
-- Bootloader self-relocation from the Advanced Exercise is not implemented.
-- Uploaded kernels run at `0x82000000` on QEMU and `0x20000000` on OrangePi RV2.
+- The relocation destination is selected by a board-specific memory policy instead of being discovered from the devicetree memory node.
+- The UART protocol contains only the magic number, payload size, and payload. It does not provide a checksum or retransmission.
